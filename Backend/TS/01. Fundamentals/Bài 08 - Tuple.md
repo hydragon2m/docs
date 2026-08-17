@@ -84,6 +84,23 @@ score.push("B"); // ❌ Lỗi compile lập tức! Property 'push' does not exis
 
 ---
 
+### e. Rest Elements in Tuples (Tuple chứa phần tử Rest)
+Trong TypeScript nâng cao, bạn có thể định nghĩa các Tuple có số lượng phần tử động ở một vị trí bất kỳ bằng cách sử dụng toán tử Rest `...`. 
+
+Điều này cho phép bạn mô tả các mảng có một vài phần tử cố định ở đầu hoặc cuối, và phần còn lại là một mảng tự do:
+
+```typescript
+// Phần tử đầu tiên bắt buộc là string, các phần tử tiếp theo là số lượng number bất kỳ
+type StringAndNumbers = [string, ...number[]];
+let a: StringAndNumbers = ["hello", 1, 2, 3, 4]; // ✅ Hợp lệ
+
+// Vị trí Rest có thể nằm ở giữa hoặc ở đầu
+type StringLast = [...boolean[], string];
+let b: StringLast = [true, false, true, "cuối cùng"]; // ✅ Hợp lệ
+```
+
+---
+
 ## 4. Sự khác biệt giữa Array và Tuple
 
 | Đặc điểm | Array (Mảng) | Tuple (Mảng cố định) |
