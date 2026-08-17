@@ -1,0 +1,7 @@
+# Bài tập 01: Production-grade Dockerfile
+# Yêu cầu: Viết một Dockerfile đa tầng (Multi-stage build) để đóng gói ứng dụng Node.js của bạn.
+# Hãy thực hiện viết các chỉ dẫn Dockerfile hoàn chỉnh tại đây.
+#
+# Gợi ý thứ tự:
+# 1. Stage 1: builder (node:20-alpine, COPY package.json, RUN npm install, COPY code, RUN build)
+# 2. Stage 2: runner (node:20-alpine, COPY --from=builder, USER node, EXPOSE 3000, CMD)
