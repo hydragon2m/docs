@@ -1,3 +1,5 @@
 {
-  "baseFontSizeAction": false
+  "baseFontSizeAction": false,
+  "theme": "obsidian",
+  "accentColor": "#a084e1"
 }
