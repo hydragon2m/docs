@@ -1,4 +1,6 @@
 {
   "openBehavior": "daily",
-  "promptDelete": false
+  "promptDelete": false,
+  "readableLineLength": false,
+  "showInlineTitle": true
 }
