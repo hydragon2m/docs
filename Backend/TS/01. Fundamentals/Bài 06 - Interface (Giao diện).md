@@ -84,12 +84,12 @@ Câu trả lời phụ thuộc vào việc file đó được TypeScript hiểu 
 
 Đây là một câu hỏi phỏng vấn kinh điển và là kiến thức bắt buộc phải nắm rõ:
 
-| Đặc điểm | Interface | Type Alias |
-| :--- | :--- | :--- |
-| **Mục đích chính** | Chuyên dùng định nghĩa cấu trúc Object / Class | Định nghĩa bí danh cho bất kỳ kiểu nào (Object, Primitive, Union, Tuple...) |
-| **Kế thừa** | Dùng từ khóa `extends` | Dùng toán tử gộp kiểu `&` (Intersection) |
-| **Gộp khai báo (Merging)** | ✅ Có (Tự động gộp nếu trùng tên) | ❌ Không (Báo lỗi trùng định danh ngay lập tức) |
-| **Kiểu nguyên thủy / Union** | ❌ Không thể đại diện cho kiểu đơn lẻ như `string` | ✅ Có thể (`type ID = string \| number`) |
+| Đặc điểm                     | Interface                                         | Type Alias                                                                  |
+| :--------------------------- | :------------------------------------------------ | :-------------------------------------------------------------------------- |
+| **Mục đích chính**           | Chuyên dùng định nghĩa cấu trúc Object / Class    | Định nghĩa bí danh cho bất kỳ kiểu nào (Object, Primitive, Union, Tuple...) |
+| **Kế thừa**                  | Dùng từ khóa `extends`                            | Dùng toán tử gộp kiểu `&` (Intersection)                                    |
+| **Gộp khai báo (Merging)**   | ✅ Có (Tự động gộp nếu trùng tên)                  | ❌ Không (Báo lỗi trùng định danh ngay lập tức)                              |
+| **Kiểu nguyên thủy / Union** | ❌ Không thể đại diện cho kiểu đơn lẻ như `string` | ✅ Có thể (`type ID = string \| number`)                                     |
 
 ---
 
