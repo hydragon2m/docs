@@ -36,8 +36,10 @@ flowchart TD
         JournalFiles["Journal Files (WiredTiger.wt.*)"]
     end
 
-    WiredTiger <--> FSCache
-    FSCache <--> DataFiles
+    WiredTiger --> FSCache
+    FSCache --> WiredTiger
+    FSCache --> DataFiles
+    DataFiles --> FSCache
     JournalBuffer -->|fsync() định kỳ <= 100ms| JournalFiles
     DirtyPages -->|Checkpoint định kỳ 60s| DataFiles
 ```
@@ -56,16 +58,14 @@ flowchart TD
 | **Mô hình Giao dịch** | ACID nguyên tử toàn diện đa bảng mặc định | ACID mặc định cho tài liệu đơn (Single-document); ACID đa tài liệu từ MongoDB 4.0+ |
 
 ```mermaid
-decisionDiagram
-%% Direct guide for database choice
 flowchart TD
     Start["Bắt đầu dự án mới"] --> Q1{"Dữ liệu có quan hệ mạng lưới phức tạp<br/>& yêu cầu bảo toàn toàn vẹn tham chiếu 100%?"}
-    Q1 -- Có (Tài chính, Kế toán, ERP) --> SQL["Chọn PostgreSQL / Relational DB"]
-    Q1 -- Không --> Q2{"Mô hình dữ liệu thay đổi liên tục,<br/>cấu trúc lồng nhau (Catalog, E-commerce, CMS, IoT)?"}
-    Q2 -- Có --> Mongo["Chọn MongoDB"]
-    Q2 -- Không --> Q3{"Yêu cầu ghi tốc độ cực lớn & Sharding phân tán ngang?"}
-    Q3 -- Có --> Mongo
-    Q3 -- Không --> SQL
+    Q1 -->|Có "Tài chính, Kế toán, ERP"| SQL["Chọn PostgreSQL / Relational DB"]
+    Q1 -->|Không| Q2{"Mô hình dữ liệu thay đổi liên tục,<br/>cấu trúc lồng nhau (Catalog, E-commerce, CMS, IoT)?"}
+    Q2 -->|Có| Mongo["Chọn MongoDB"]
+    Q2 -->|Không| Q3{"Yêu cầu ghi tốc độ cực lớn & Sharding phân tán ngang?"}
+    Q3 -->|Có| Mongo
+    Q3 -->|Không| SQL
 ```
 
 ---
@@ -189,8 +189,8 @@ flowchart TD
         BadS --> ResultBad
     end
 
-    Decision -->|"Chuẩn ESR: { status: 1, createdAt: -1, totalAmount: 1 }"| OptimalFlow
-    Decision -->|"Sai quy tắc: { status: 1, totalAmount: 1, createdAt: -1 }"| BadFlow
+    Decision -->|"Chuẩn ESR (Equality, Sort, Range)"| OptimalFlow
+    Decision -->|"Sai quy tắc ESR"| BadFlow
 ```
 
 #### a. Giải thích sâu về Quy tắc ESR (Equality, Sort, Range)
@@ -212,14 +212,13 @@ flowchart TD
      { unique: true, partialFilterExpression: { email: { $exists: true, $ne: null } } }
    );
    ```
-5. **Text Index & Wildcard Index (`$**`):** Phục vụ tìm kiếm từ khóa văn bản hoặc lập chỉ mục toàn bộ các thuộc tính động không xác định trước.
+5. **Text Index & Wildcard Index (`"$**"`):** Phục vụ tìm kiếm từ khóa văn bản hoặc lập chỉ mục toàn bộ các thuộc tính động không xác định trước.
 
 #### c. Đọc và Phân tích Execution Stats với `explain("executionStats")`
 * `nReturned`: Số lượng tài liệu thực tế khớp và trả về cho client.
 * `totalKeysExamined`: Số lượng khóa Index mà engine đã phải quét qua.
 * `totalDocsExamined`: Số lượng Document thực tế trong bộ nhớ/đĩa mà engine phải nạp lên để kiểm tra.
-* **Tỷ lệ vàng của một truy vấn tối ưu:**
-$$\frac{\text{totalKeysExamined}}{\text{nReturned}} \approx 1 \quad \text{và} \quad \text{totalDocsExamined} \approx \text{nReturned}$$
+* **Tỷ lệ vàng của một truy vấn tối ưu:** `totalKeysExamined / nReturned ≈ 1` và `totalDocsExamined ≈ nReturned`
 * **Các Execution Stages cần lưu ý:**
   * `IXSCAN`: Quét Index (Rất tốt).
   * `FETCH`: Lấy Document từ Disk/Memory dựa trên con trỏ từ IXSCAN.
@@ -268,14 +267,12 @@ flowchart TD
     Primary -->|Asynchronous Replication via Oplog| Sec1["SECONDARY NODE 1<br/>(Bản sao dữ liệu)"]
     Primary -->|Asynchronous Replication via Oplog| Sec2["SECONDARY NODE 2<br/>(Bản sao dữ liệu)"]
     
-    Sec1 -.->|Heartbeat (2s)| Primary
-    Sec2 -.->|Heartbeat (2s)| Primary
+    Sec1 -.->|Heartbeat 2s| Primary
+    Sec2 -.->|Heartbeat 2s| Primary
     Sec1 -.->|Heartbeat| Sec2
     
-    subgraph ReadRouting["Read Preferences Configuration"]
-        R1["primary (Mặc định - Nhất quán tuyệt đối)"]
-        R2["secondaryPreferred (Đọc từ Secondary nếu có thể)"]
-    end
+    Client -.->|Read Preference: secondaryPreferred| Sec1
+    Client -->|Read Preference: primary| Primary
 ```
 
 #### a. Replica Sets & Oplog (Operations Log)

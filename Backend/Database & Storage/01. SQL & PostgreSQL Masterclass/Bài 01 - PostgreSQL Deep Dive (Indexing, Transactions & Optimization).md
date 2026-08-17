@@ -20,8 +20,10 @@ flowchart TD
         Locks["Lock Table<br/>(Shared / Exclusive Locks)"]
     end
 
-    BP1 <--> SharedMemory
-    BP2 <--> SharedMemory
+    BP1 --> SharedMemory
+    SharedMemory --> BP1
+    BP2 --> SharedMemory
+    SharedMemory --> BP2
 
     subgraph BackgroundProcesses["HỆ THỐNG TIẾN TRÌNH NỀN (BACKGROUND PROCESSES)"]
         BGWriter["Background Writer<br/>(Ghi dirty pages dần vào disk)"]
@@ -31,7 +33,8 @@ flowchart TD
         StatsCollector["Stats Collector<br/>(Thu thập số liệu giám sát)"]
     end
 
-    BackgroundProcesses <--> SharedMemory
+    BackgroundProcesses --> SharedMemory
+    SharedMemory --> BackgroundProcesses
 
     subgraph DiskStorage["DISK STORAGE (NVMe / SSD)"]
         DataFiles["Data Files (Tables, Indexes, FSM, VM)"]
@@ -80,25 +83,25 @@ Cơ chế **WAL (Write-Ahead Logging)** tuân thủ nguyên lý vàng của cơ 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client as Backend App (Node.js)
-    participant BP as Backend Process
-    participant SB as Shared Buffers (RAM)
-    participant WB as WAL Buffers (RAM)
-    participant WAL as WAL Segments (Disk)
-    participant CP as Checkpointer
-    participant Disk as Data Files (Disk)
+    actor Client as "Backend App (Node.js)"
+    participant BP as "Backend Process"
+    participant SB as "Shared Buffers (RAM)"
+    participant WB as "WAL Buffers (RAM)"
+    participant WAL as "WAL Segments (Disk)"
+    participant CP as "Checkpointer"
+    participant Disk as "Data Files (Disk)"
 
-    Client->>BP: UPDATE accounts SET balance = 500 WHERE id = 1
-    BP->>SB: Đọc Page 12 vào Shared Buffers (nếu chưa có)
-    BP->>SB: Sửa đổi Page 12 (Đánh dấu Dirty Page)
-    BP->>WB: Ghi nhận WAL Record (Lsn, Old val, New val)
-    Client->>BP: COMMIT
-    BP->>WB: Ghi COMMIT Record
-    WB->>WAL: fsync() WAL Record xuống Disk (Tuần tự - Sequential I/O)
-    BP-->>Client: Transaction Committed! (Dữ liệu an toàn 100%)
-    Note over SB,Disk: Dirty Page vẫn nằm trên RAM!<br/>Chưa cần ghi ngay xuống Data Files.
-    CP->>SB: Quét các Dirty Pages định kỳ (Checkpoint)
-    SB->>Disk: Flush Dirty Pages xuống Data Files (Random I/O)
+    Client->>BP: "UPDATE accounts SET balance = 500 WHERE id = 1"
+    BP->>SB: "Đọc Page 12 vào Shared Buffers (nếu chưa có)"
+    BP->>SB: "Sửa đổi Page 12 (Đánh dấu Dirty Page)"
+    BP->>WB: "Ghi nhận WAL Record (Lsn, Old val, New val)"
+    Client->>BP: "COMMIT"
+    BP->>WB: "Ghi COMMIT Record"
+    WB->>WAL: "fsync() WAL Record xuống Disk (Tuần tự - Sequential I/O)"
+    BP-->>Client: "Transaction Committed! (Dữ liệu an toàn 100%)"
+    Note over SB,Disk: "Dirty Page vẫn nằm trên RAM!<br/>Chưa cần ghi ngay xuống Data Files."
+    CP->>SB: "Quét các Dirty Pages định kỳ (Checkpoint)"
+    SB->>Disk: "Flush Dirty Pages xuống Data Files (Random I/O)"
 ```
 
 * **Lợi ích tối thượng của WAL:** Biến các thao tác ghi ngẫu nhiên (Random Write I/O trên Data Files) thành các thao tác ghi tuần tự cực nhanh (Sequential Write I/O trên WAL files).
@@ -164,31 +167,35 @@ $$\text{Threshold} = \text{autovacuum\_vacuum\_threshold} + (\text{autovacuum\_v
 ### 4. Indexing Deep Dive (Cấu trúc chỉ mục & Chiến lược quét)
 
 ```mermaid
-mindmap
-  root((PostgreSQL Indexing))
-    B-Tree Index
-      Cân bằng chiều cao
-      Equality (=) & Range (<, <=, >, >=, BETWEEN)
-      Sắp xếp ORDER BY
-      Toán tử IN, IS NULL
-    Hash Index
-      Chỉ so sánh bằng (=)
-      O(1) Access time
-      Hỗ trợ WAL từ PG 10+
-    GIN Index
-      Generalized Inverted Index
-      JSONB attributes (@>, ?)
-      Full-text Search (tsvector)
-      Array containment (&&, @>)
-    GiST & SP-GiST Index
-      Generalized Search Tree
-      Spatial Data / GIS (PostGIS)
-      Range Types (tsrange, int4range)
-      k-Nearest Neighbor (k-NN)
-    BRIN Index
-      Block Range Index
-      Time-series / Append-only logs
-      Kích thước siêu nhỏ (Vài KB cho hàng chục GB data)
+flowchart TD
+    root["PostgreSQL Indexing"] --> B["B-Tree Index"]
+    root --> H["Hash Index"]
+    root --> G["GIN Index"]
+    root --> GIS["GiST & SP-GiST Index"]
+    root --> BR["BRIN Index"]
+
+    B --> B1["Cân bằng chiều cao"]
+    B --> B2["Equality (=) & Range (<, <=, >, >=, BETWEEN)"]
+    B --> B3["Sắp xếp ORDER BY"]
+    B --> B4["Toán tử IN, IS NULL"]
+
+    H --> H1["Chỉ so sánh bằng (=)"]
+    H --> H2["O(1) Access time"]
+    H --> H3["Hỗ trợ WAL từ PG 10+"]
+
+    G --> G1["Generalized Inverted Index"]
+    G --> G2["JSONB attributes (@>, ?)"]
+    G --> G3["Full-text Search (tsvector)"]
+    G --> G4["Array containment (&&, @>)"]
+
+    GIS --> GIS1["Generalized Search Tree"]
+    GIS --> GIS2["Spatial Data / GIS (PostGIS)"]
+    GIS --> GIS3["Range Types (tsrange, int4range)"]
+    GIS --> GIS4["k-Nearest Neighbor (k-NN)"]
+
+    BR --> BR1["Block Range Index"]
+    BR --> BR2["Time-series / Append-only logs"]
+    BR --> BR3["Kích thước siêu nhỏ (Vài KB cho hàng chục GB data)"]
 ```
 
 #### a. Phân tích chi tiết các loại Index
@@ -452,20 +459,20 @@ async function getVipCustomersWithLatestOrdersOptimized() {
 > [!CAUTION]
 > ### 1. Cạm bẫy Deadlocks do Thứ tự Khóa không Nhất quán (Lock Ordering)
 > Deadlock xảy ra khi Transaction 1 giữ khóa trên Row A và chờ Row B, trong khi Transaction 2 đang giữ khóa trên Row B và chờ Row A.
-> 
-> ```mermaid
-> sequenceDiagram
->     participant T1 as Transaction 1
->     participant DB as PostgreSQL Engine
->     participant T2 as Transaction 2
->     
->     T1->>DB: UPDATE accounts SET balance = balance - 100 WHERE id = 1; (Lock Row 1)
->     T2->>DB: UPDATE accounts SET balance = balance + 200 WHERE id = 2; (Lock Row 2)
->     T1->>DB: UPDATE accounts SET balance = balance + 100 WHERE id = 2; (Chờ Row 2 giải phóng...)
->     T2->>DB: UPDATE accounts SET balance = balance - 200 WHERE id = 1; (Chờ Row 1 giải phóng...)
->     Note over DB: DEADLOCK DETECTED sau deadlock_timeout (mặc định 1s)!<br/>Postgres tự động abort và rollback 1 Transaction.
-> ```
-> 
+
+```mermaid
+sequenceDiagram
+    participant T1 as Transaction 1
+    participant DB as PostgreSQL Engine
+    participant T2 as Transaction 2
+    
+    T1->>DB: "UPDATE accounts SET balance = balance - 100 WHERE id = 1; (Lock Row 1)"
+    T2->>DB: "UPDATE accounts SET balance = balance + 200 WHERE id = 2; (Lock Row 2)"
+    T1->>DB: "UPDATE accounts SET balance = balance + 100 WHERE id = 2; (Chờ Row 2 giải phóng...)"
+    T2->>DB: "UPDATE accounts SET balance = balance - 200 WHERE id = 1; (Chờ Row 1 giải phóng...)"
+    Note over DB: "DEADLOCK DETECTED sau deadlock_timeout (mặc định 1s)!<br/>Postgres tự động abort và rollback 1 Transaction."
+```
+
 > **Quy tắc vàng phòng chống Deadlock:**
 > - **Sắp xếp thứ tự cập nhật ID theo quy chuẩn nhất quán (Deterministic Ordering):** Luôn khóa/cập nhật các tài nguyên theo thứ tự tăng dần của Primary Key: `ORDER BY id ASC`.
 > - **Sử dụng mệnh đề `NOWAIT` hoặc `SKIP LOCKED`:**

@@ -18,11 +18,13 @@ flowchart LR
     subgraph RelationalWorld["RDBMS (PostgreSQL / MySQL)"]
         TableUsers[("Table: users<br/>id (UUID) | email (VARCHAR)")]
         TableOrders[("Table: orders<br/>id (UUID) | user_id (FK)")]
-        TableUsers <-->|"Foreign Key"| TableOrders
+        TableUsers ---|"Foreign Key"| TableOrders
     end
 
-    OOPWorld <--> ORMBridge
-    ORMBridge <--> RelationalWorld
+    OOPWorld --> ORMBridge
+    ORMBridge --> OOPWorld
+    ORMBridge --> RelationalWorld
+    RelationalWorld --> ORMBridge
 ```
 
 ---
@@ -33,14 +35,31 @@ Trong thế giới ORM, có hai trường phái thiết kế kiến trúc đối
 
 ```mermaid
 flowchart TD
-    subgraph AR["ACTIVE RECORD PATTERN (TypeORM BaseEntity / Sequelize)"]
-        AREntity["Entity Class (Mang cả Dữ liệu + Logic Database)<br/>user.name = 'Bob'<br/>await user.save()<br/>await user.remove()"]
+    subgraph ARPattern["1. ACTIVE RECORD PATTERN (MÔ HÌNH THỰC THỂ TỰ QUẢN LÝ)"]
+        direction TB
+        AR_Entity["Entity Class (Mang CẢ Dữ liệu + Hành vi DB)<br/>class User extends BaseEntity {<br/>  id: string;<br/>  name: string;<br/>  save() { ... }<br/>  remove() { ... }<br/>}"]
+        AR_Usage["Application Service Logic<br/>const user = new User();<br/>user.name = 'Bob';<br/>await user.save(); // Gọi trực tiếp DB method trên entity"]
+        AR_DB[("Database Table: users")]
+
+        AR_Usage --> AR_Entity
+        AR_Entity ===|"Tightly Coupled (Gắn chặt)"| AR_DB
+        AR_Notes["• Vi phạm Single Responsibility (SRP)<br/>• Khó Unit Test (Phải mock toàn bộ Entity methods)<br/>• Đại diện: TypeORM BaseEntity, Sequelize, ActiveRecord"]
+        AR_Entity -.-> AR_Notes
     end
 
-    subgraph DM["DATA MAPPER PATTERN (TypeORM Repository / Prisma)"]
-        DMEntity["Domain Entity (Chỉ chứa Dữ liệu thuần túy)<br/>user = new User('Bob')"]
-        DMRepo["Repository / Client (Chịu trách nhiệm lưu trữ)<br/>await userRepo.save(user)<br/>await prisma.user.create({ data: user })"]
-        DMEntity -->|"Được truyền vào"| DMRepo
+    subgraph DMPattern["2. DATA MAPPER PATTERN (MÔ HÌNH PHÂN TÁCH LỚP ÁNH XẠ)"]
+        direction TB
+        DM_Entity["Pure Domain Entity (Chỉ chứa Dữ liệu thuần túy)<br/>class User {<br/>  id: string;<br/>  name: string;<br/>  // Không chứa bất kỳ logic DB nào<br/>}"]
+        DM_Repo["Repository / Persistence Mapper<br/>class UserRepository {<br/>  save(user: User): Promise<User>;<br/>  find(id: string): Promise<User>;<br/>}<br/>(hoặc Prisma Client Engine)"]
+        DM_Usage["Application Service Logic<br/>const user = new User('Bob');<br/>await userRepository.save(user);"]
+        DM_DB[("Database Table: users")]
+
+        DM_Usage --> DM_Entity
+        DM_Usage --> DM_Repo
+        DM_Repo -->|"Ánh xạ Object <-> SQL"| DM_Entity
+        DM_Repo -.-|"Tách biệt hoàn toàn (Decoupled)"| DM_DB
+        DM_Notes["• Tuân thủ Clean Architecture & SRP<br/>• Cực kỳ dễ Unit Test (Mock Repository interface)<br/>• Đại diện: TypeORM Repository, Prisma, Hibernate"]
+        DM_Repo -.-> DM_Notes
     end
 ```
 
@@ -119,19 +138,19 @@ TypeORM cung cấp 2 cách xử lý Transaction:
 ```mermaid
 sequenceDiagram
     autonumber
-    participant App as Service Logic
-    participant QR as QueryRunner
-    participant DB as PostgreSQL Database
+    participant App as "Service Logic"
+    participant QR as "QueryRunner"
+    participant DB as "PostgreSQL Database"
 
-    App->>QR: dataSource.createQueryRunner()
-    App->>QR: connect()
-    App->>QR: startTransaction()
-    Note over QR,DB: BEGIN TRANSACTION
-    App->>QR: manager.save(order)
-    App->>QR: manager.decrement(Wallet, { id: userId }, 'balance', amount)
-    App->>QR: commitTransaction()
-    Note over QR,DB: COMMIT;
-    App->>QR: release() (Giải phóng connection về Pool)
+    App->>QR: "dataSource.createQueryRunner()"
+    App->>QR: "connect()"
+    App->>QR: "startTransaction()"
+    Note over QR,DB: "BEGIN TRANSACTION"
+    App->>QR: "manager.save(order)"
+    App->>QR: "manager.decrement(Wallet, { id: userId }, 'balance', amount)"
+    App->>QR: "commitTransaction()"
+    Note over QR,DB: "COMMIT;"
+    App->>QR: "release() (Giải phóng connection về Pool)"
 ```
 
 ---
@@ -283,21 +302,39 @@ Khi hệ thống có hàng triệu người dùng, bạn **tuyệt đối không
 
 ```mermaid
 flowchart TD
-    subgraph Phase1["GIAI ĐOẠN 1: EXPAND (MỞ RỘNG)"]
-        P1Code["App v1: Vẫn đọc/ghi 'fullname'<br/>App v2: Ghi vào cả 2 cột ('fullname' + 'first_name, last_name')"]
-        P1DB[("Database: Thêm cột mới 'first_name', 'last_name' (NULLABLE)")]
+    subgraph Phase1["BƯỚC 1: EXPAND (MỞ RỘNG CƠ SỞ DỮ LIỆU)"]
+        direction TB
+        P1_Migration["1. Chạy Database Migration Script:<br/>ALTER TABLE users ADD COLUMN first_name VARCHAR(100) NULL,<br/>ADD COLUMN last_name VARCHAR(100) NULL;"]
+        P1_State["Trạng thái Database:<br/>• Cột cũ: 'fullname' (NOT NULL)<br/>• Cột mới: 'first_name', 'last_name' (Tạm thời NULLABLE)"]
+        P1_App["Trạng thái Code (App v1 đang chạy):<br/>• Tiếp tục đọc và ghi bình thường vào cột 'fullname' (Không ảnh hưởng)"]
+        P1_Migration --> P1_State --> P1_App
     end
 
-    subgraph Phase2["GIAI ĐOẠN 2: BACKFILL (DI CHUYỂN DỮ LIỆU CŨ)"]
-        P2Batch["Chạy Background Worker tách dữ liệu cũ:<br/>'fullname' -> 'first_name', 'last_name'"]
+    subgraph Phase2["BƯỚC 2: DUAL-WRITING (GHI ĐỒNG THỜI CẢ 2 CỘT)"]
+        direction TB
+        P2_Deploy["2. Triển khai Code mới (App v2.0 Rolling Deployment):"]
+        P2_Logic["Logic đọc/ghi của App v2.0:<br/>• READ: Đọc từ 'first_name', 'last_name' (Fallback sang 'fullname' nếu NULL)<br/>• WRITE: Ghi đồng thời vào CẢ HAI ('fullname' VÀ 'first_name', 'last_name')"]
+        P2_Sync["Đảm bảo an toàn 100%: Dễ dàng Rollback về App v1 nếu có lỗi"]
+        P2_Deploy --> P2_Logic --> P2_Sync
     end
 
-    subgraph Phase3["GIAI ĐOẠN 3: SWITCH & CONTRACT (THU HẸP)"]
-        P3Deploy["Toàn bộ Server chuyển sang App v2 (Chỉ đọc/ghi cột mới)"]
-        P3Clean[("Database Migration: Đặt NOT NULL cho cột mới, XÓA cột 'fullname'")]
+    subgraph Phase3["BƯỚC 3: BACKFILL (DI CHUYỂN DỮ LIỆU CŨ TRONG NỀN)"]
+        direction TB
+        P3_Worker["3. Chạy Background Job / Worker di chuyển dữ liệu cũ:"]
+        P3_Script["UPDATE users<br/>SET first_name = split_part(fullname, ' ', 1),<br/>    last_name = split_part(fullname, ' ', 2)<br/>WHERE first_name IS NULL;<br/>(Thực thi theo từng Batch 1.000 dòng tránh Lock bảng)"]
+        P3_Done["Xác nhận dữ liệu: 100% các dòng cũ đã được đồng bộ sang cột mới"]
+        P3_Worker --> P3_Script --> P3_Done
     end
 
-    Phase1 --> Phase2 --> Phase3
+    subgraph Phase4["BƯỚC 4: CONTRACT (THU HẸP & DỌN DẸP SCHEMA)"]
+        direction TB
+        P4_DeployApp["4. Triển khai App v2.1 (Contract Code):<br/>• Hoàn toàn ngắt kết nối với cột cũ 'fullname'<br/>• Chỉ đọc và ghi duy nhất vào cột mới"]
+        P4_FinalMigration["5. Chạy Final Cleanup Migration:<br/>ALTER TABLE users ALTER COLUMN first_name SET NOT NULL,<br/>ALTER COLUMN last_name SET NOT NULL,<br/>DROP COLUMN fullname;"]
+        P4_Complete["HOÀN TẤT ZERO-DOWNTIME MIGRATION THÀNH CÔNG 🎉"]
+        P4_DeployApp --> P4_FinalMigration --> P4_Complete
+    end
+
+    Phase1 ==> Phase2 ==> Phase3 ==> Phase4
 ```
 
 ---

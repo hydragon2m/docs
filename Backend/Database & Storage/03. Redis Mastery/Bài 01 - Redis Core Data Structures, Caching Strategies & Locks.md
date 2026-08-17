@@ -141,34 +141,40 @@ flowchart TD
 ### 2. Cấu trúc Dữ liệu Chuyên sâu (Redis Core Data Structures)
 
 ```mermaid
-mindmap
-  root((Redis Data Structures))
-    Strings
-      Text / JSON Caching
-      Atomic Counters INCR
-      Distributed Locks SETNX
-    Hashes
-      User Profiles
-      Shopping Cart
-      Object fields storage
-    Lists
-      LPUSH / RPOP Message Queue
-      Activity Feeds
-      Capped Collection LTRIM
-    Sets
-      Unique Tags
-      SINTER Friend Recommendations
-      SISMEMBER Unique Check
-    Sorted Sets ZSET
-      Real-time Leaderboard
-      Rate Limiter Sliding Window
-      Delayed Task Queue
-    Bitmaps
-      User Daily Active Check-in
-      Feature Flags
-    HyperLogLog
-      Unique Visitors Count UV
-      Cardinality Estimation 12KB
+flowchart TD
+    root["Redis Data Structures"] --> STR["Strings"]
+    root --> HASH["Hashes"]
+    root --> LIST["Lists"]
+    root --> SET["Sets"]
+    root --> ZSET["Sorted Sets (ZSET)"]
+    root --> BIT["Bitmaps"]
+    root --> HLL["HyperLogLog"]
+
+    STR --> STR1["Text / JSON Caching"]
+    STR --> STR2["Atomic Counters INCR"]
+    STR --> STR3["Distributed Locks SETNX"]
+
+    HASH --> HASH1["User Profiles"]
+    HASH --> HASH2["Shopping Cart"]
+    HASH --> HASH3["Object fields storage"]
+
+    LIST --> LIST1["LPUSH / RPOP Message Queue"]
+    LIST --> LIST2["Activity Feeds"]
+    LIST --> LIST3["Capped Collection LTRIM"]
+
+    SET --> SET1["Unique Tags"]
+    SET --> SET2["SINTER Friend Recommendations"]
+    SET --> SET3["SISMEMBER Unique Check"]
+
+    ZSET --> ZSET1["Real-time Leaderboard"]
+    ZSET --> ZSET2["Rate Limiter Sliding Window"]
+    ZSET --> ZSET3["Delayed Task Queue"]
+
+    BIT --> BIT1["User Daily Active Check-in"]
+    BIT --> BIT2["Feature Flags"]
+
+    HLL --> HLL1["Unique Visitors Count UV"]
+    HLL --> HLL2["Cardinality Estimation 12KB"]
 ```
 
 #### 1. Strings (Chuỗi nhị phân - Binary Safe)
@@ -342,17 +348,13 @@ graph TD
 Khi Redis đạt tới giới hạn bộ nhớ cấu hình (`maxmemory`), nó bắt buộc phải giải phóng dữ liệu cũ để nạp dữ liệu mới theo chính sách được cấu hình:
 
 ```mermaid
-classDiagram
-    class EvictionPolicies {
-        +noeviction (Báo lỗi OOM khi ghi)
-        +allkeys-lru (Xóa ít dùng gần đây nhất trong MỌI key)
-        +volatile-lru (Xóa LRU chỉ trong các key CÓ TTL)
-        +allkeys-lfu (Xóa tần suất thấp nhất trong MỌI key)
-        +volatile-lfu (Xóa LFU chỉ trong các key CÓ TTL)
-        +volatile-ttl (Xóa key có TTL ngắn nhất còn lại)
-        +allkeys-random (Xóa ngẫu nhiên mọi key)
-        +volatile-random (Xóa ngẫu nhiên key có TTL)
-    }
+flowchart TD
+    Eviction["Các chính sách thu hồi (Eviction Policies)"]
+    Eviction --> noeviction["noeviction (Mặc định - Báo lỗi OOM khi ghi)"]
+    Eviction --> lru["Nhóm LRU (allkeys-lru, volatile-lru)"]
+    Eviction --> lfu["Nhóm LFU (allkeys-lfu, volatile-lfu)"]
+    Eviction --> random["Nhóm Random (allkeys-random, volatile-random)"]
+    Eviction --> ttl["Nhóm TTL (volatile-ttl)"]
 ```
 
 * **`noeviction` (Mặc định):** Không xóa bất kỳ dữ liệu nào. Khi đầy RAM, mọi lệnh ghi mới sẽ trả về lỗi `OOM command not allowed when used memory > 'maxmemory'`. Thích hợp khi dùng Redis làm Database chính.
@@ -370,34 +372,34 @@ Trong hệ thống Microservices hoặc nhiều Node.js Worker chạy song song,
 ```mermaid
 sequenceDiagram
     autonumber
-    actor WorkerA as Node.js Worker A
-    actor WorkerB as Node.js Worker B
-    participant Redis as Redis Server / Cluster
-    participant DB as Database (PostgreSQL)
+    actor WorkerA as "Node.js Worker A"
+    actor WorkerB as "Node.js Worker B"
+    participant Redis as "Redis Server / Cluster"
+    participant DB as "Database (PostgreSQL)"
 
-    Note over WorkerA,Redis: GIAI ĐOẠN 1: GIÀNH QUYỀN KHÓA (LOCK ACQUISITION)
-    WorkerA->>Redis: SET lock:order:101 "uuid-A-999" NX PX 10000
-    Redis-->>WorkerA: "OK" (Cấp khóa thành công cho Worker A)
+    Note over WorkerA,Redis: "GIAI ĐOẠN 1: GIÀNH QUYỀN KHÓA (LOCK ACQUISITION)"
+    WorkerA->>Redis: "SET lock:order:101 'uuid-A-999' NX PX 10000"
+    Redis-->>WorkerA: "OK (Cấp khóa thành công cho Worker A)"
 
-    WorkerB->>Redis: SET lock:order:101 "uuid-B-888" NX PX 10000
-    Redis-->>WorkerB: (nil) (Thất bại: Khóa đang bị Worker A giữ)
-    Note over WorkerB: Worker B lùi lại (Exponential Backoff & Sleep 100ms)
+    WorkerB->>Redis: "SET lock:order:101 'uuid-B-888' NX PX 10000"
+    Redis-->>WorkerB: "nil (Thất bại: Khóa đang bị Worker A giữ)"
+    Note over WorkerB: "Worker B lùi lại (Exponential Backoff & Sleep 100ms)"
 
-    Note over WorkerA,DB: GIAI ĐOẠN 2: THỰC THI NGHIỆP VỤ & GIA HẠN WATCHDOG
-    WorkerA->>DB: Xử lý giao dịch thanh toán tài khoản
-    opt Tác vụ kéo dài: Tự động gia hạn thời gian sống (Heartbeat Extension)
-        WorkerA->>Redis: EVAL Lua Extend (token="uuid-A-999", ttl=10000ms)
-        Redis-->>WorkerA: 1 (Gia hạn TTL thành công)
+    Note over WorkerA,DB: "GIAI ĐOẠN 2: THỰC THI NGHIỆP VỤ & GIA HẠN WATCHDOG"
+    WorkerA->>DB: "Xử lý giao dịch thanh toán tài khoản"
+    opt "Tác vụ kéo dài: Tự động gia hạn thời gian sống"
+        WorkerA->>Redis: "EVAL Lua Extend (token='uuid-A-999', ttl=10000ms)"
+        Redis-->>WorkerA: "1 (Gia hạn TTL thành công)"
     end
-    DB-->>WorkerA: Hoàn tất giao dịch thành công
+    DB-->>WorkerA: "Hoàn tất giao dịch thành công"
 
-    Note over WorkerA,Redis: GIAI ĐOẠN 3: GIẢI PHÓNG KHÓA NGUYÊN TỬ QUA LUA SCRIPT (ATOMIC RELEASE)
-    WorkerA->>Redis: EVAL "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end" 1 lock:order:101 "uuid-A-999"
-    Redis-->>WorkerA: 1 (Token khớp -> Đã xóa lock an toàn)
+    Note over WorkerA,Redis: "GIAI ĐOẠN 3: GIẢI PHÓNG KHÓA NGUYÊN TỬ QUA LUA SCRIPT"
+    WorkerA->>Redis: "EVAL Lua Script (Check token & DEL) 1 lock:order:101 'uuid-A-999'"
+    Redis-->>WorkerA: "1 (Token khớp -> Đã xóa lock an toàn)"
 
-    Note over WorkerB,Redis: GIAI ĐOẠN 4: WORKER B GIÀNH KHÓA Ở LẦN RETRY TIẾP THEO
-    WorkerB->>Redis: SET lock:order:101 "uuid-B-888" NX PX 10000
-    Redis-->>WorkerB: "OK" (Worker B bắt đầu xử lý nghiệp vụ)
+    Note over WorkerB,Redis: "GIAI ĐOẠN 4: WORKER B GIÀNH KHÓA Ở LẦN RETRY TIẾP THEO"
+    WorkerB->>Redis: "SET lock:order:101 'uuid-B-888' NX PX 10000"
+    Redis-->>WorkerB: "OK (Worker B bắt đầu xử lý nghiệp vụ)"
 ```
 
 #### Quy tắc Cốt lõi của một Distributed Lock An Toàn:
@@ -417,39 +419,39 @@ Khi Redis chạy trong cụm phân tán gồm $N$ Redis Master độc lập (th�
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client as Node.js Redlock Client
-    participant M1 as Redis Master 1
-    participant M2 as Redis Master 2
-    participant M3 as Redis Master 3
-    participant M4 as Redis Master 4
-    participant M5 as Redis Master 5
+    actor Client as "Node.js Redlock Client"
+    participant M1 as "Redis Master 1"
+    participant M2 as "Redis Master 2"
+    participant M3 as "Redis Master 3"
+    participant M4 as "Redis Master 4"
+    participant M5 as "Redis Master 5"
 
-    Note over Client: 1. Bắt đầu lấy Lock (Token = UUID, TTL = 10,000ms, StartTime = T1)
+    Note over Client: "1. Bắt đầu lấy Lock (Token = UUID, TTL = 10,000ms, StartTime = T1)"
     
-    par Gửi lệnh SET NX PX đồng thời tới 5 Master độc lập
-        Client->>M1: SET lock:res token NX PX 10000
-        Client->>M2: SET lock:res token NX PX 10000
-        Client->>M3: SET lock:res token NX PX 10000
-        Client->>M4: SET lock:res token NX PX 10000
-        Client->>M5: SET lock:res token NX PX 10000
+    par "Gửi lệnh SET NX PX đồng thời tới 5 Master độc lập"
+        Client->>M1: "SET lock:res token NX PX 10000"
+        Client->>M2: "SET lock:res token NX PX 10000"
+        Client->>M3: "SET lock:res token NX PX 10000"
+        Client->>M4: "SET lock:res token NX PX 10000"
+        Client->>M5: "SET lock:res token NX PX 10000"
     end
 
-    M1-->>Client: OK
-    M2-->>Client: OK
-    M3-->>Client: OK
-    M4-->>Client: (timeout / connection error)
-    M5-->>Client: OK
+    M1-->>Client: "OK"
+    M2-->>Client: "OK"
+    M3-->>Client: "OK"
+    M4-->>Client: "timeout / connection error"
+    M5-->>Client: "OK"
 
-    Note over Client: 2. Tính toán Quorum Consensus:<br/>• Số Master cấp lock thành công: 4/5 (>= 3/5 Quorum ✅)<br/>• Thời gian tiêu tốn: ElapsedTime = T2 - T1 = 120ms<br/>• Validity Time = TTL - ElapsedTime - ClockDrift ≈ 9,860ms > 0 ✅<br/>==> ĐẠT ĐƯỢC REDLOCK HỢP LỆ!
+    Note over Client: "2. Tính toán Quorum Consensus:<br/>• Số Master cấp lock thành công: 4/5 (>= 3/5 Quorum ✅)<br/>• Thời gian tiêu tốn: ElapsedTime = T2 - T1 = 120ms<br/>• Validity Time = TTL - ElapsedTime - ClockDrift ≈ 9,860ms > 0 ✅<br/>==> ĐẠT ĐƯỢC REDLOCK HỢP LỆ!"
 
-    Note over Client: 3. Thực thi Critical Section an toàn...
+    Note over Client: "3. Thực thi Critical Section an toàn..."
 
-    par 4. Giải phóng Redlock trên TOÀN BỘ 5 Master bằng Lua Script
-        Client->>M1: EVAL Lua Release (lock:res, token)
-        Client->>M2: EVAL Lua Release (lock:res, token)
-        Client->>M3: EVAL Lua Release (lock:res, token)
-        Client->>M4: EVAL Lua Release (lock:res, token)
-        Client->>M5: EVAL Lua Release (lock:res, token)
+    par "4. Giải phóng Redlock trên TOÀN BỘ 5 Master bằng Lua Script"
+        Client->>M1: "EVAL Lua Release (lock:res, token)"
+        Client->>M2: "EVAL Lua Release (lock:res, token)"
+        Client->>M3: "EVAL Lua Release (lock:res, token)"
+        Client->>M4: "EVAL Lua Release (lock:res, token)"
+        Client->>M5: "EVAL Lua Release (lock:res, token)"
     end
 ```
 
