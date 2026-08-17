@@ -3,15 +3,21 @@
 ### 1. Tầm quan trọng của Xử lý lỗi trong Node.js
 Node.js vận hành trên mô hình **Single-threaded Event Loop** (Vòng lặp sự kiện đơn luồng). Khác với các mô hình đa luồng truyền thống (như Java Spring Boot hay PHP-FPM - nơi mỗi request được phục vụ bởi một thread/process độc lập), trong Node.js, toàn bộ hàng nghìn người dùng đồng thời đều chia sẻ chung một tiến trình (process) duy nhất.
 
-```text
-  Mô hình Multi-threaded:
-  [Request 1] ──► [Thread 1] ──► Lỗi (Crash Thread 1) ──► Chỉ Request 1 bị ảnh hưởng.
-  [Request 2] ──► [Thread 2] ──► Hoạt động bình thường.
+```mermaid
+flowchart TD
+    subgraph MT["Mô hình Multi-threaded"]
+        direction LR
+        R1["Request 1"] --> T1["Thread 1"] --> E1["Lỗi (Crash Thread 1)"] --> O1["Chỉ Request 1 bị ảnh hưởng"]
+        R2["Request 2"] --> T2["Thread 2"] --> O2["Hoạt động bình thường"]
+    end
 
-  Mô hình Single-threaded (Node.js):
-  [Request 1] ──┐
-  [Request 2] ──┼──► [Single Process / Event Loop] ──► Unhandled Exception ──► 💥 TOÀN BỘ SERVER SẬP!
-  [Request 3] ──┘                                                               (Hàng nghìn user mất kết nối)
+    subgraph ST["Mô hình Single-threaded (Node.js)"]
+        direction LR
+        SR1["Request 1"] --> SP["Single Process / Event Loop"]
+        SR2["Request 2"] --> SP
+        SR3["Request 3"] --> SP
+        SP --> UE["Unhandled Exception"] --> CRASH["💥 TOÀN BỘ SERVER SẬP!<br/>(Hàng nghìn user mất kết nối)"]
+    end
 ```
 
 Nếu một ngoại lệ (exception) không được xử lý (unhandled exception) xảy ra tại bất kỳ điểm nào trong mã nguồn, toàn bộ tiến trình Node.js sẽ bị hủy hoại và thoát ngay lập tức (`crash`). Điều này đồng nghĩa với việc **tất cả người dùng khác đang kết nối vào hệ thống cũng sẽ bị ngắt đột ngột**.
@@ -23,23 +29,11 @@ Do đó, xây dựng một chiến lược **Xử lý lỗi toàn diện (Compre
 ### 2. Phân loại lỗi cốt lõi: Operational Errors vs Programmer Errors
 Để xử lý lỗi đúng đắn, tiêu chuẩn kỹ thuật đầu tiên trong Node.js là phải phân biệt rạch ròi giữa hai loại lỗi:
 
-```text
-                        ┌───────────────────────────────┐
-                        │        LỖI TRONG NODE.JS       │
-                        └──────────────┬────────────────┘
-                                       │
-                ┌──────────────────────┴──────────────────────┐
-                ▼                                             ▼
-  ┌───────────────────────────┐                 ┌───────────────────────────┐
-  │    OPERATIONAL ERRORS     │                 │     PROGRAMMER ERRORS     │
-  │     (Lỗi Vận Hành)        │                 │   (Lỗi Lập Trình Viên)    │
-  ├───────────────────────────┤                 ├───────────────────────────┤
-  │ • Dự đoán trước được      │                 │ • Là Bug trong mã nguồn   │
-  │ • Xảy ra ở Runtime        │                 │ • Không lường trước được  │
-  │ • Hệ thống vẫn an toàn    │                 │ • Tiến trình bị bẩn (bad) │
-  │ • Hành động: Xử lý & Báo  │                 │ • Hành động: Crash & Khởi │
-  │   lỗi cho Client          │                 │   động lại (Graceful Exit)│
-  └───────────────────────────┘                 └───────────────────────────┘
+```mermaid
+flowchart TD
+    ROOT["LỖI TRONG NODE.JS"]
+    ROOT --> OP["OPERATIONAL ERRORS<br/>(Lỗi Vận Hành)<br/>• Dự đoán trước được<br/>• Xảy ra ở Runtime<br/>• Hệ thống vẫn an toàn<br/>• Hành động: Xử lý & Báo lỗi cho Client"]
+    ROOT --> PR["PROGRAMMER ERRORS<br/>(Lỗi Lập Trình Viên)<br/>• Là Bug trong mã nguồn<br/>• Không lường trước được<br/>• Tiến trình bị bẩn (bad)<br/>• Hành động: Crash & Khởi động lại (Graceful Exit)"]
 ```
 
 #### a. Operational Errors (Lỗi Vận Hành - Có thể lường trước)
@@ -180,21 +174,13 @@ module.exports = catchAsync;
 
 Để quản lý lỗi có cấu trúc, chúng ta xây dựng cây kế thừa từ class `Error` chuẩn của JavaScript.
 
-```text
-                          ┌───────────────────────┐
-                          │     Native Error      │
-                          └───────────┬───────────┘
-                                      │
-                          ┌───────────▼───────────┐
-                          │       AppError        │ (isOperational = true, statusCode, status)
-                          └───────────┬───────────┘
-                                      │
-        ┌───────────────────┬─────────┴─────────┬───────────────────┐
-        ▼                   ▼                   ▼                   ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│BadRequestError│   │ Unauthorized  │   │ NotFoundError │   │ValidationError│
-│     (400)     │   │  Error (401)  │   │     (404)     │   │     (422)     │
-└───────────────┘   └───────────────┘   └───────────────┘   └───────────────┘
+```mermaid
+flowchart TD
+    NE["Native Error"] --> AE["AppError<br/>(isOperational = true, statusCode, status)"]
+    AE --> BR["BadRequestError<br/>(400)"]
+    AE --> UA["UnauthorizedError<br/>(401)"]
+    AE --> NF["NotFoundError<br/>(404)"]
+    AE --> VE["ValidationError<br/>(422)"]
 ```
 
 #### Triển khai chi tiết:
@@ -264,35 +250,14 @@ module.exports = {
 
 Trong kiến trúc phân lớp chuẩn (Layered Architecture: Controller ➔ Service ➔ Repository), lỗi phải được lan truyền có kiểm soát:
 
-```text
-  [HTTP Request]
-        │
-        ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │ CONTROLLER LAYER                                            │
-  │ • Tiếp nhận req, gọi Service qua catchAsync()               │
-  └──────────────┬──────────────────────────────▲───────────────┘
-                 │ (1. Gọi hàm)                 │ (4. Đẩy lỗi qua next(err))
-                 ▼                              │
-  ┌─────────────────────────────────────────────┴───────────────┐
-  │ SERVICE LAYER (Business Logic)                              │
-  │ • Thực thi nghiệp vụ. Nếu vi phạm quy tắc:                  │
-  │   throw new NotFoundError("Không tìm thấy user");           │
-  └──────────────┬──────────────────────────────▲───────────────┘
-                 │ (2. Query DB)                │ (3. Ném DB Error / Timeout)
-                 ▼                              │
-  ┌─────────────────────────────────────────────┴───────────────┐
-  │ REPOSITORY / DATA ACCESS LAYER                              │
-  │ • Tương tác CSDL/Cache/Third-party                          │
-  └─────────────────────────────────────────────────────────────┘
-                                                │
-                                                ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │ CENTRALIZED ERROR HANDLING MIDDLEWARE (app.use(err, ...))   │
-  │ • Phân loại Operational vs Programmer Error                 │
-  │ • Ghi Log chi tiết hệ thống                                 │
-  │ • Phản hồi JSON chuẩn hóa cho Client                        │
-  └─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    REQ["HTTP Request"] --> CTRL["CONTROLLER LAYER<br/>• Tiếp nhận req, gọi Service qua catchAsync()"]
+    CTRL -->|"1. Gọi hàm"| SVC["SERVICE LAYER (Business Logic)<br/>• Thực thi nghiệp vụ. Nếu vi phạm quy tắc:<br/>throw new NotFoundError(\"Không tìm thấy user\")"]
+    SVC -->|"2. Query DB"| REPO["REPOSITORY / DATA ACCESS LAYER<br/>• Tương tác CSDL/Cache/Third-party"]
+    REPO -->|"3. Ném DB Error / Timeout"| SVC
+    SVC -->|"4. Đẩy lỗi qua next(err)"| CTRL
+    CTRL --> MW["CENTRALIZED ERROR HANDLING MIDDLEWARE (app.use(err, ...))<br/>• Phân loại Operational vs Programmer Error<br/>• Ghi Log chi tiết hệ thống<br/>• Phản hồi JSON chuẩn hóa cho Client"]
 ```
 
 **Quy tắc lan truyền:**
@@ -307,18 +272,13 @@ Trong kiến trúc phân lớp chuẩn (Layered Architecture: Controller ➔ Ser
 
 Ngay cả khi bạn cấu hình error middleware cẩn thận, vẫn có những lỗi xảy ra ngoài phạm vi Express Request-Response Cycle (ví dụ: lỗi trong background worker, cron job, hoặc kết nối CSDL khi khởi động). Node.js cung cấp 2 sự kiện toàn cục quan trọng:
 
-```text
-  ┌────────────────────────────────────────────────────────────────────────┐
-  │                     PROCESS-LEVEL EVENT HANDLERS                       │
-  ├────────────────────────────────────┬───────────────────────────────────┤
-  │    process.on('uncaughtException') │ process.on('unhandledRejection')  │
-  ├────────────────────────────────────┼───────────────────────────────────┤
-  │ • Bắt lỗi ĐỒNG BỘ không có         │ • Bắt PROMISE REJECT không có     │
-  │   try/catch.                       │   hàm .catch().                   │
-  │ • Trạng thái tiến trình BỊ BẨN.    │ • Bắt đầu từ Node.js v15+, hành vi│
-  │ • BẮT BUỘC: Log ➔ Graceful         │   mặc định sẽ biến thành          │
-  │   Shutdown ➔ process.exit(1).      │   uncaughtException và crash app. │
-  └────────────────────────────────────┴───────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph PL["PROCESS-LEVEL EVENT HANDLERS"]
+        direction LR
+        UE["process.on('uncaughtException')<br/>• Bắt lỗi ĐỒNG BỘ không có try/catch<br/>• Trạng thái tiến trình BỊ BẨN<br/>• BẮT BUỘC: Log ➔ Graceful Shutdown ➔ process.exit(1)"]
+        UR["process.on('unhandledRejection')<br/>• Bắt PROMISE REJECT không có hàm .catch()<br/>• Bắt đầu từ Node.js v15+, hành vi mặc định sẽ biến thành uncaughtException và crash app"]
+    end
 ```
 
 #### a. `process.on('uncaughtException')`
@@ -379,22 +339,11 @@ app.use((err, req, res, next) => {
 
 ### 6. Chiến lược xử lý lỗi ở Production vs Development
 
-```text
-                     ┌───────────────────────────────┐
-                     │   Express Error Middleware    │
-                     └───────────────┬───────────────┘
-                                     │
-                    ┌────────────────┴────────────────┐
-                    ▼                                 ▼
-      ┌───────────────────────────┐     ┌───────────────────────────┐
-      │   Môi trường DEVELOPMENT  │     │   Môi trường PRODUCTION   │
-      ├───────────────────────────┤     ├───────────────────────────┤
-      │ • Trả về Full Stack Trace │     │ • Ẩn toàn bộ Stack Trace  │
-      │ • Chi tiết error object   │     │ • Nếu isOperational:      │
-      │ • Mục đích: Debug nhanh   │     │     Trả message thân thiện│
-      │                           │     │ • Nếu Programmer Error:   │
-      │                           │     │     Trả Generic 500 Msg   │
-      └───────────────────────────┘     └───────────────────────────┘
+```mermaid
+flowchart TD
+    MW["Express Error Middleware"]
+    MW --> DEV["Môi trường DEVELOPMENT<br/>• Trả về Full Stack Trace<br/>• Chi tiết error object<br/>• Mục đích: Debug nhanh"]
+    MW --> PROD["Môi trường PRODUCTION<br/>• Ẩn toàn bộ Stack Trace<br/>• Nếu isOperational: Trả message thân thiện<br/>• Nếu Programmer Error: Trả Generic 500 Msg"]
 ```
 
 1. **Development:** Nhà phát triển cần biết chính xác dòng code nào bị lỗi, file nào, stack trace ra sao để sửa bug ngay lập tức.

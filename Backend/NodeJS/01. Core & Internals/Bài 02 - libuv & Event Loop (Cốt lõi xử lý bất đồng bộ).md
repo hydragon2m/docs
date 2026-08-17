@@ -23,25 +23,15 @@ libuv chịu trách nhiệm quản lý:
 
 Event Loop không phải là một vòng lặp `while (true)` chạy hỗn loạn. Nó là một quy trình lặp đi lặp lại gồm **6 pha (phases) có thứ tự nghiêm ngặt**. Mỗi pha sở hữu một hàng đợi (Queue) chứa các hàm callback cần thực thi:
 
-```text
-       ┌──────────────────────────────────────────────┐
- ───►  │ 1. TIMERS (setTimeout, setInterval)          │
-       └──────────────────────┬───────────────────────┘
-       ┌──────────────────────▼───────────────────────┐
-       │ 2. PENDING CALLBACKS (Trì hoãn I/O)          │
-       └──────────────────────┬───────────────────────┘
-       ┌──────────────────────▼───────────────────────┐
-       │ 3. IDLE, PREPARE (Sử dụng nội bộ)            │
-       └──────────────────────┬───────────────────────┘
-       ┌──────────────────────▼───────────────────────┐
-       │ 4. POLL (Nhận sự kiện I/O mới & chạy cb)     │ ◄─── (Kết nối mới...)
-       └──────────────────────┬───────────────────────┘
-       ┌──────────────────────▼───────────────────────┐
-       │ 5. CHECK (setImmediate)                      │
-       └──────────────────────┬───────────────────────┘
-       ┌──────────────────────▼───────────────────────┐
-       │ 6. CLOSE CALLBACKS (Ví dụ: socket.on('close'))│
-       └──────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    P1["1. TIMERS (setTimeout, setInterval)"] --> P2["2. PENDING CALLBACKS (Trì hoãn I/O)"]
+    P2 --> P3["3. IDLE, PREPARE (Sử dụng nội bộ)"]
+    P3 --> P4["4. POLL (Nhận sự kiện I/O mới & chạy cb)"]
+    NewConn["(Kết nối mới...)"] --> P4
+    P4 --> P5["5. CHECK (setImmediate)"]
+    P5 --> P6["6. CLOSE CALLBACKS (Ví dụ: socket.on('close'))"]
+    P6 --> P1
 ```
 
 #### Pha 1: Timers

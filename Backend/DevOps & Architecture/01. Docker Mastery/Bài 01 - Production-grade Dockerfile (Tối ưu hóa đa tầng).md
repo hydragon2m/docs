@@ -28,12 +28,19 @@ CMD ["node", "dist/main.js"]
 
 Multi-stage build cho phép chúng ta chia Dockerfile thành nhiều phân đoạn (stages) tạm thời. Chúng ta chỉ lấy ra sản phẩm cuối cùng (mã JS đã biên dịch và production `node_modules`) để đưa vào image chạy cuối cùng, vứt bỏ toàn bộ rác thải build.
 
-```text
-  [STAGE 1: BUILD] ──────────────────────────► [STAGE 2: PRODUCTION]
-  - Dùng base image lớn (node:20)              - Dùng base image siêu nhẹ (node:20-alpine)
-  - Cài cả devDependencies                    - Chỉ cài production dependencies
-  - Biên dịch TS -> JS                         - Chỉ copy file JS đã biên dịch từ Stage 1
-  (Sinh ra thư mục dist/ và rác build)         (Dung lượng cuối cùng: < 100MB)
+```mermaid
+flowchart LR
+    subgraph Stage1["STAGE 1: BUILD"]
+        direction TB
+        S1_Desc["- Dùng base image lớn (node:20)<br/>- Cài cả devDependencies<br/>- Biên dịch TS -> JS<br/>(Sinh ra thư mục dist/ và rác build)"]
+    end
+
+    subgraph Stage2["STAGE 2: PRODUCTION"]
+        direction TB
+        S2_Desc["- Dùng base image siêu nhẹ (node:20-alpine)<br/>- Chỉ cài production dependencies<br/>- Chỉ copy file JS đã biên dịch từ Stage 1<br/>(Dung lượng cuối cùng: < 100MB)"]
+    end
+
+    Stage1 -->|"Copy dist/ & node_modules"| Stage2
 ```
 
 ---

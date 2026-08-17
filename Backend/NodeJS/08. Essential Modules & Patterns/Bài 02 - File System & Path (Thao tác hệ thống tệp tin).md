@@ -7,26 +7,20 @@ Node.js cung cấp hai module hạt nhân (Core Modules) chuyên trách:
 * **`node:fs` (File System):** Cung cấp API tương tác trực tiếp với hệ thống tập tin của hệ điều hành (POSIX standard). Mọi tác vụ I/O nặng đều được libuv ủy quyền ngầm cho **Thread Pool** (mặc định 4 threads) để không làm nghẽn Event Loop.
 * **`node:path` (Path):** Cung cấp các tiện ích chuẩn hóa, trích xuất và biến đổi các chuỗi đường dẫn tệp tin sao cho tương thích tuyệt đối trên các hệ điều hành khác nhau (POSIX như Linux/macOS vs Windows).
 
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                          ỨNG DỤNG NODE.JS                              │
-│                                                                        │
-│   ┌────────────────────────────────┐  ┌────────────────────────────┐   │
-│   │       Module node:path         │  │      Module node:fs        │   │
-│   │ (Chuẩn hóa chuỗi đường dẫn OS) │  │  (Thao tác File / Folder)  │   │
-│   └───────────────┬────────────────┘  └──────────────┬─────────────┘   │
-└───────────────────┼──────────────────────────────────┼─────────────────┘
-                    │                                  │
-                    ▼                                  ▼
-         ┌─────────────────────┐             ┌───────────────────┐
-         │ Chuỗi Path Cross-OS │             │    libuv I/O      │
-         └─────────────────────┘             │  (Thread Pool)    │
-                                             └─────────┬─────────┘
-                                                       │
-                                                       ▼
-                                            ┌─────────────────────┐
-                                            │ OS Kernel File I/O  │
-                                            └─────────────────────┘
+```mermaid
+flowchart TD
+    subgraph APP["ỨNG DỤNG NODE.JS"]
+        PATH["Module node:path<br/>(Chuẩn hóa chuỗi đường dẫn OS)"]
+        FS["Module node:fs<br/>(Thao tác File / Folder)"]
+    end
+
+    CROSS["Chuỗi Path Cross-OS"]
+    LIBUV["libuv I/O<br/>(Thread Pool)"]
+    KERNEL["OS Kernel File I/O"]
+
+    PATH --> CROSS
+    FS --> LIBUV
+    LIBUV --> KERNEL
 ```
 
 ---
@@ -35,17 +29,14 @@ Node.js cung cấp hai module hạt nhân (Core Modules) chuyên trách:
 
 Mô-đun `fs` hỗ trợ 3 phong cách lập trình để phù hợp với từng ngữ cảnh sử dụng:
 
-```text
-┌───────────────────────────────────────────────────────────────────────────────────────┐
-│                                 3 API STYLES TRONG FS                                 │
-│                                                                                       │
-│  1. Synchronous (Đồng bộ)      2. Callback (Truyền thống)     3. Promises (Hiện đại)  │
-│  ┌────────────────────────┐    ┌────────────────────────┐    ┌──────────────────────┐ │
-│  │ fs.readFileSync()      │    │ fs.readFile(path, cb)  │    │ await fs.readFile()  │ │
-│  │ Chặn toàn bộ luồng     │    │ Error-First Callback   │    │ Dùng Async/Await     │ │
-│  │ Chỉ dùng khi bootstrap │    │ Dễ dính Callback Hell  │    │ Khuyến nghị cao nhất │ │
-│  └────────────────────────┘    └────────────────────────┘    └──────────────────────┘ │
-└───────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph STYLES["3 API STYLES TRONG FS"]
+        direction LR
+        S1["1. Synchronous (Đồng bộ)<br/>- fs.readFileSync()<br/>- Chặn toàn bộ luồng<br/>- Chỉ dùng khi bootstrap"]
+        S2["2. Callback (Truyền thống)<br/>- fs.readFile(path, cb)<br/>- Error-First Callback<br/>- Dễ dính Callback Hell"]
+        S3["3. Promises (Hiện đại)<br/>- await fs.readFile()<br/>- Dùng Async/Await<br/>- Khuyến nghị cao nhất"]
+    end
 ```
 
 | Kiểu API | Cú pháp Import | Ưu điểm | Nhược điểm / Khuyến cáo |
@@ -160,22 +151,13 @@ async function scanDirectoryModern(dirPath) {
 #### c. Tự xây dựng hàm duyệt đệ quy (Custom Recursive Traversal)
 Để hiểu sâu thuật toán duyệt cây thư mục (Depth-First Search - DFS) và đảm bảo tương thích mọi môi trường:
 
-```text
-               ┌───────────────────────┐
-               │    Thư mục gốc (Root)  │
-               └───────────┬───────────┘
-                           │
-             ┌─────────────┴─────────────┐
-             ▼                           ▼
-     ┌───────────────┐           ┌───────────────┐
-     │ File: a.txt   │           │ Thư mục: sub/ │
-     └───────────────┘           └───────┬───────┘
-                                         │
-                                   ┌─────┴─────┐
-                                   ▼           ▼
-                              ┌─────────┐ ┌─────────┐
-                              │  b.txt  │ │  c.png  │
-                              └─────────┘ └─────────┘
+```mermaid
+flowchart TD
+    ROOT["Thư mục gốc (Root)"]
+    ROOT --> FA["File: a.txt"]
+    ROOT --> DSUB["Thư mục: sub/"]
+    DSUB --> FB["b.txt"]
+    DSUB --> FC["c.png"]
 ```
 
 ```javascript
@@ -206,18 +188,13 @@ async function getFilesRecursively(dir) {
 
 Node.js cung cấp hai cơ chế để phát hiện sự kiện file/thư mục bị chỉnh sửa, tạo mới hoặc xóa:
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                             FILE WATCHING MECHANISMS                                   │
-│                                                                                        │
-│   fs.watch() (Sự kiện Hệ điều hành)            fs.watchFile() (Thăm dò - Polling)      │
-│   ┌──────────────────────────────────────┐     ┌─────────────────────────────────────┐ │
-│   │ Linux: inotify                       │     │ Định kỳ gọi stat() để so sánh mtime │ │
-│   │ macOS: FSEvents                      │     │ Tốn CPU do kiểm tra liên tục        │ │
-│   │ Windows: ReadDirectoryChangesW       │     │ Hoạt động ổn định trên mọi hệ thống │ │
-│   │ Tốc độ cực nhanh, phản hồi tức thì   │     │ (Bao gồm cả Network Drive / NFS)    │ │
-│   └──────────────────────────────────────┘     └─────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph WATCH["FILE WATCHING MECHANISMS"]
+        direction LR
+        W1["fs.watch() (Sự kiện Hệ điều hành)<br/>- Linux: inotify<br/>- macOS: FSEvents<br/>- Windows: ReadDirectoryChangesW<br/>- Tốc độ cực nhanh, phản hồi tức thì"]
+        W2["fs.watchFile() (Thăm dò - Polling)<br/>- Định kỳ gọi stat() để so sánh mtime<br/>- Tốn CPU do kiểm tra liên tục<br/>- Hoạt động ổn định trên mọi hệ thống (Bao gồm cả Network Drive / NFS)"]
+    end
 ```
 
 | Đặc điểm | `fs.watch()` | `fs.watchFile()` |
@@ -296,19 +273,13 @@ console.log(path.normalize('/foo/bar//baz/asdf/quux/..')); // '/foo/bar/baz/asdf
 
 Đây là hai phương thức dễ gây nhầm lẫn nhất nhưng có bản chất hoạt động hoàn toàn khác nhau:
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                path.join vs path.resolve                               │
-│                                                                                        │
-│  path.join('/a', 'b', '../c')                  path.resolve('/a', 'b', '../c')         │
-│  ┌──────────────────────────────────────┐     ┌──────────────────────────────────────┐ │
-│  │ 1. Nối tất cả các đoạn chuỗi lại     │     │ 1. Duyệt từ PHẢI qua TRÁI            │ │
-│  │ 2. Chuẩn hóa dấu '.', '..'           │     │ 2. Dừng lại ngay khi gặp dấu root '/'│ │
-│  │ 3. Kết quả: '/a/c'                   │     │ 3. Nếu chưa chạm root, ghép tiếp     │ │
-│  │    (Giữ nguyên tính tương đối)       │     │    đường dẫn hiện tại process.cwd()  │ │
-│  │                                      │     │ 4. Luôn trả về ĐƯỜNG DẪN TUYỆT ĐỐI   │ │
-│  └──────────────────────────────────────┘     └──────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph COMP["path.join vs path.resolve"]
+        direction LR
+        J["path.join('/a', 'b', '../c')<br/>1. Nối tất cả các đoạn chuỗi lại<br/>2. Chuẩn hóa dấu '.', '..'<br/>3. Kết quả: '/a/c' (Giữ nguyên tính tương đối)"]
+        R["path.resolve('/a', 'b', '../c')<br/>1. Duyệt từ PHẢI qua TRÁI<br/>2. Dừng lại ngay khi gặp dấu root '/'<br/>3. Nếu chưa chạm root, ghép tiếp đường dẫn hiện tại process.cwd()<br/>4. Luôn trả về ĐƯỜNG DẪN TUYỆT ĐỐI"]
+    end
 ```
 
 ```javascript

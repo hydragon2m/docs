@@ -80,24 +80,23 @@ flowchart TD
 ### 3. Event Sourcing Pattern
 Thay vì cập nhật trực tiếp trạng thái hiện tại của một bản ghi (ví dụ: `UPDATE bank_account SET balance = 1500 WHERE id = 1`), Event Sourcing lưu trữ tất cả các sự kiện thay đổi dưới dạng một chuỗi sự kiện bất biến (**Immutable Append-Only Log**).
 
-```text
-Trạng thái cuối cùng của Tài khoản Ngân hàng: Balance = $150
+```mermaid
+flowchart TD
+    subgraph Traditional["Kiến trúc truyền thống"]
+        T1["ID: 1 | Balance: $150<br/>(Mất toàn bộ lịch sử biến động số dư)"]
+    end
 
-Kiến trúc truyền thống:
-┌───────────────────────────────┐
-│ ID: 1 | Balance: $150         │ (Mất toàn bộ lịch sử biến động số dư)
-└───────────────────────────────┘
-
-Event Sourcing (Event Store):
-┌───────┬──────────────────────┬─────────────┬────────────────────────┐
-│ Seq   │ Event Type           │ Data        │ Timestamp              │
-├───────┼──────────────────────┼─────────────┼────────────────────────┤
-│ #001  │ AccountCreated       │ Initial $0  │ 2026-08-01 08:00:00    │
-│ #002  │ MoneyDeposited       │ +$500       │ 2026-08-02 09:30:00    │
-│ #003  │ MoneyWithdrawn       │ -$400       │ 2026-08-05 14:15:00    │
-│ #004  │ MoneyDeposited       │ +$50        │ 2026-08-10 18:00:00    │
-└───────┴──────────────────────┴─────────────┴────────────────────────┘
-Current State = Replay(#001 + #002 + #003 + #004) = $150
+    subgraph EventSourcing["Event Sourcing (Event Store)"]
+        direction TB
+        E1["#001 | AccountCreated | Initial $0 | 2026-08-01 08:00:00"]
+        E2["#002 | MoneyDeposited | +$500 | 2026-08-02 09:30:00"]
+        E3["#003 | MoneyWithdrawn | -$400 | 2026-08-05 14:15:00"]
+        E4["#004 | MoneyDeposited | +$50 | 2026-08-10 18:00:00"]
+        
+        E1 --> E2 --> E3 --> E4
+        State["Current State = Replay(#001 + #002 + #003 + #004) = $150"]
+        E4 --> State
+    end
 ```
 
 #### Các khái niệm trọng yếu:

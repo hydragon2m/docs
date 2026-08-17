@@ -22,15 +22,19 @@ Docker cung cấp 4 driver mạng cốt lõi:
 | **Host** | Gỡ bỏ lớp cách ly mạng. Container dùng chung card mạng và dải port trực tiếp của Host. | ❌ Dùng localhost của Host | Xử lý gói tin tốc độ cao, stream video, benchmark mạng |
 | **None** | Vô hiệu hóa toàn bộ mạng (chỉ còn loopback `127.0.0.1`). | ❌ Không có mạng | Chạy tác vụ tính toán bảo mật tuyệt đối, batch runner |
 
-```text
-[Máy Chủ Vật Lý (Host)]
-  │
-  ├── [Custom Bridge Network: "app-tier"]
-  │     ├── Container: "nest-api"      (IP: 172.20.0.2) ◄──┐
-  │     │                                                 │ Giao tiếp tự động
-  │     └── Container: "postgres-db"   (IP: 172.20.0.3) ◄──┘ qua DNS nội bộ ("postgres-db")
-  │
-  └── [Default Bridge Network: "bridge"] (Không có DNS tự động)
+```mermaid
+flowchart TB
+    subgraph Host["Máy Chủ Vật Lý (Host)"]
+        subgraph CustomBridge["Custom Bridge Network: 'app-tier'"]
+            NestApi["Container: 'nest-api'<br/>(IP: 172.20.0.2)"]
+            PostgresDB["Container: 'postgres-db'<br/>(IP: 172.20.0.3)"]
+            NestApi <-->|"Giao tiếp tự động<br/>qua DNS nội bộ ('postgres-db')"| PostgresDB
+        end
+
+        subgraph DefaultBridge["Default Bridge Network: 'bridge'"]
+            DefaultNote["(Không có DNS tự động)"]
+        end
+    end
 ```
 
 > [!IMPORTANT]
@@ -62,23 +66,22 @@ docker network rm backend-net
 
 ### 2. So sánh các cơ chế Lưu trữ: Volumes vs Bind Mounts vs tmpfs
 
-```text
-                  ┌────────────────────────────────────────┐
-                  │           Host File System             │
-                  │                                        │
-                  │   /var/lib/docker/volumes/             │
-                  │   └── [Named Volume] ──────────┐       │
-                  │                                │       │
-                  │   /home/user/my-project/       │       │
-                  │   └── [Bind Mount] ────┐       │       │
-                  │                        │       │       │
-                  │   [RAM / tmpfs] ──┐    │       │       │
-                  └───────────────────┼────┼───────┼───────┘
-                                      │    │       │
-                                      ▼    ▼       ▼
-                          ┌────────────────────────────────┐
-                          │        Docker Container        │
-                          └────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph HostFS["Host File System"]
+        direction TB
+        NV["/var/lib/docker/volumes/<br/>└── [Named Volume]"]
+        BM["/home/user/my-project/<br/>└── [Bind Mount]"]
+        RAM["[RAM / tmpfs]"]
+    end
+
+    subgraph Container["Docker Container"]
+        DC["Ứng dụng / Dữ liệu Container"]
+    end
+
+    NV -->|"Named Volume Mount"| DC
+    BM -->|"Bind Mount"| DC
+    RAM -->|"tmpfs Mount"| DC
 ```
 
 | Tiêu chí | Named Volume | Bind Mount | tmpfs Mount |

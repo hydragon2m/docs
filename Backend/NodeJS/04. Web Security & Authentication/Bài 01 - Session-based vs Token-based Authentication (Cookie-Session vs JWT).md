@@ -13,15 +13,15 @@ Giao thức HTTP mặc định là **Stateless (Bất trạng thái)**. Nghĩa l
 
 ### 1. Session-based Authentication (Stateful)
 
-```text
-  [Client]                                              [Server]
-     │                                                     │
-     ├────────── 1. Gửi Username & Password ──────────────►│
-     │                                                     │
-     │◄───────── 2. Trả về Cookie chứa SessionID ──────────┤ (Tạo Session ở RAM/Database)
-     │              (Set-Cookie: connect.sid=xyz)          │
-     │                                                     │
-     ├────────── 3. Request sau: Tự đính kèm Cookie ──────►│ (Đối chiếu SessionID trong DB)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: 1. Gửi Username & Password
+    Note over Server: Tạo Session ở RAM/Database
+    Server-->>Client: 2. Trả về Cookie chứa SessionID<br/>(Set-Cookie: connect.sid=xyz)
+    Client->>Server: 3. Request sau: Tự đính kèm Cookie
+    Note over Server: Đối chiếu SessionID trong DB
 ```
 
 * **Cơ chế:**
@@ -42,15 +42,15 @@ Giao thức HTTP mặc định là **Stateless (Bất trạng thái)**. Nghĩa l
 
 ### 2. Token-based Authentication (Stateless / JWT)
 
-```text
-  [Client]                                              [Server]
-     │                                                     │
-     ├────────── 1. Gửi Username & Password ──────────────►│
-     │                                                     │
-     │◄───────── 2. Trả về Token (JWT) ────────────────────┤ (Không lưu gì ở Server)
-     │                                                     │
-     ├────────── 3. Request sau: Gửi Token qua Header ────►│ (Xác thực chữ ký của Token)
-     │              (Authorization: Bearer <token>)        │
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: 1. Gửi Username & Password
+    Note over Server: Không lưu gì ở Server
+    Server-->>Client: 2. Trả về Token (JWT)
+    Client->>Server: 3. Request sau: Gửi Token qua Header<br/>(Authorization: Bearer <token>)
+    Note over Server: Xác thực chữ ký của Token
 ```
 
 * **Cơ chế:**

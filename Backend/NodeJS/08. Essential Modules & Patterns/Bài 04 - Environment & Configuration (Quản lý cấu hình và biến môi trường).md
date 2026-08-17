@@ -10,21 +10,11 @@ const port = process.env.PORT;
 const dbHost = process.env.DB_HOST;
 ```
 
-```text
-  ┌─────────────────────────────────────────────────────────────┐
-  │                 HỆ ĐIỀU HÀNH (OS ENVIRONMENT)               │
-  │   PORT=5000  •  NODE_ENV=production  •  DB_HOST=10.0.0.1    │
-  └──────────────────────────────┬──────────────────────────────┘
-                                 │ Khởi tạo tiến trình (node app.js)
-                                 ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │                   TIẾN TRÌNH NODE.JS (PROCESS)              │
-  │   process.env = {                                           │
-  │     PORT: "5000",                                           │
-  │     NODE_ENV: "production",                                 │
-  │     DB_HOST: "10.0.0.1"                                     │
-  │   }                                                         │
-  └─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    OS["HỆ ĐIỀU HÀNH (OS ENVIRONMENT)<br/>PORT=5000 • NODE_ENV=production • DB_HOST=10.0.0.1"]
+    PROC["TIẾN TRÌNH NODE.JS (PROCESS)<br/>process.env = {<br/>  PORT: \"5000\",<br/>  NODE_ENV: \"production\",<br/>  DB_HOST: \"10.0.0.1\"<br/>}"]
+    OS -->|"Khởi tạo tiến trình (node app.js)"| PROC
 ```
 
 ---
@@ -34,17 +24,16 @@ Phương pháp luận tiêu chuẩn xây dựng ứng dụng đám mây (Cloud-n
 
 > *"Một ứng dụng phải phân tách hoàn toàn giữa Mã nguồn (Code) và Cấu hình (Config). Cấu hình thay đổi giữa các môi trường triển khai (Development, Staging, Production), nhưng mã nguồn thì hoàn toàn giữ nguyên."*
 
-```text
-  ┌─────────────────────────────────────────────────────────────────────────┐
-  │                       MÃ NGUỒN DUY NHẤT (SOURCE CODE)                    │
-  │                 const dbUrl = config.database.url;                      │
-  └───────┬────────────────────────────┼────────────────────────────┬───────┘
-          │ (Deploy Dev)               │ (Deploy Staging)           │ (Deploy Prod)
-          ▼                            ▼                            ▼
-  ┌───────────────┐            ┌───────────────┐            ┌───────────────┐
-  │ MÔI TRƯỜNG DEV│            │MÔI TRƯỜNG STAG│            │MÔI TRƯỜNG PROD│
-  │ DB_HOST=local │            │ DB_HOST=stag  │            │ DB_HOST=aws   │
-  └───────────────┘            └───────────────┘            └───────────────┘
+```mermaid
+flowchart TD
+    CODE["MÃ NGUỒN DUY NHẤT (SOURCE CODE)<br/>const dbUrl = config.database.url;"]
+    DEV["MÔI TRƯỜNG DEV<br/>DB_HOST=local"]
+    STAG["MÔI TRƯỜNG STAG<br/>DB_HOST=stag"]
+    PROD["MÔI TRƯỜNG PROD<br/>DB_HOST=aws"]
+
+    CODE -->|"(Deploy Dev)"| DEV
+    CODE -->|"(Deploy Staging)"| STAG
+    CODE -->|"(Deploy Prod)"| PROD
 ```
 
 **Tại sao không được hardcode cấu hình trong code?**
@@ -60,11 +49,9 @@ Phương pháp luận tiêu chuẩn xây dựng ứng dụng đám mây (Cloud-n
 
 Trong quá trình phát triển cục bộ (Local Development), việc gõ lệnh xuất biến môi trường bằng tay trên Terminal (`export PORT=3000`) rất tốn thời gian. Thư viện **`dotenv`** giải quyết vấn đề này bằng cách tự động đọc file `.env` và đưa các giá trị vào `process.env`.
 
-```text
-  ┌───────────────┐        ┌────────────────┐        ┌───────────────────┐
-  │   File .env   │ ─────► │ Thư viện dotenv│ ─────► │    process.env    │
-  │   PORT=4000   │        │     config()   │        │ { PORT: "4000" }  │
-  └───────────────┘        └────────────────┘        └───────────────────┘
+```mermaid
+flowchart LR
+    ENV["File .env<br/>PORT=4000"] --> DOT["Thư viện dotenv<br/>config()"] --> PROC["process.env<br/>{ PORT: \"4000\" }"]
 ```
 
 #### a. Cách nạp dotenv vào ứng dụng:
@@ -118,10 +105,11 @@ Một hệ thống doanh nghiệp thực tế trải qua nhiều môi trường:
 * `.env.production`: Môi trường thực tế phục vụ người dùng cuối (Không bao giờ lưu file này vào Git).
 * `.env.local`: Cấu hình ghi đè cá nhân cho từng lập trình viên (Luôn nằm trong `.gitignore`).
 
-```text
-  [NODE_ENV=development] ──► Nạp: .env.development (Ghi đè bởi .env.local nếu có)
-  [NODE_ENV=test]        ──► Nạp: .env.test
-  [NODE_ENV=production]  ──► Nạp: Biến môi trường từ Cloud / Kubernetes Secret
+```mermaid
+flowchart TD
+    D["NODE_ENV=development"] -->|"Nạp"| DF[".env.development (Ghi đè bởi .env.local nếu có)"]
+    T["NODE_ENV=test"] -->|"Nạp"| TF[".env.test"]
+    P["NODE_ENV=production"] -->|"Nạp"| PF["Biến môi trường từ Cloud / Kubernetes Secret"]
 ```
 
 #### Mã nguồn nạp file `.env` theo `NODE_ENV` linh hoạt:
@@ -156,23 +144,11 @@ dotenv.config({
 #### Kiến trúc Config Module chuẩn:
 Tất cả các biến môi trường chỉ được đọc **DUY NHẤT MỘT LẦN** tại một file trung tâm (`src/config/index.js` hoặc `src/config/index.ts`), được validate, ép kiểu, gắn giá trị mặc định, và đóng băng (`Object.freeze()`).
 
-```text
-  [process.env]
-        │
-        ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │ SRC/CONFIG/INDEX.JS (SINGLE SOURCE OF TRUTH)                │
-  │ • Nạp biến môi trường                                       │
-  │ • Ép kiểu: String ➔ Number, Boolean, Array                  │
-  │ • Gán Default Fallback Values                               │
-  │ • Validate Schema (Fail Fast nếu sai)                       │
-  │ • Object.freeze() (Bảo vệ tính bất biến)                    │
-  └──────────────┬──────────────────────────────┬───────────────┘
-                 │ (Import config object)       │
-                 ▼                              ▼
-          ┌──────────────┐              ┌──────────────┐
-          │ Auth Service │              │  DB Service  │
-          └──────────────┘              └──────────────┘
+```mermaid
+flowchart TD
+    ENV["process.env"] --> CFG["SRC/CONFIG/INDEX.JS (SINGLE SOURCE OF TRUTH)<br/>• Nạp biến môi trường<br/>• Ép kiểu: String ➔ Number, Boolean, Array<br/>• Gán Default Fallback Values<br/>• Validate Schema (Fail Fast nếu sai)<br/>• Object.freeze() (Bảo vệ tính bất biến)"]
+    CFG -->|"(Import config object)"| AUTH["Auth Service"]
+    CFG -->|"(Import config object)"| DB["DB Service"]
 ```
 
 ---
@@ -211,21 +187,11 @@ module.exports = envSchema;
 
 ### 5. Bảo mật Secrets trong Doanh nghiệp & Cloud
 
-```text
-                                  ┌───────────────────────────────────┐
-                                  │   SECRET MANAGEMENT HIERARCHY     │
-                                  └─────────────────┬─────────────────┘
-                                                    │
-             ┌──────────────────────────────────────┴──────────────────────────────────────┐
-             ▼                                                                             ▼
-  ┌─────────────────────────────────────┐                       ┌─────────────────────────────────────┐
-  │       LOCAL DEVELOPMENT             │                       │        ENTERPRISE / PRODUCTION      │
-  ├─────────────────────────────────────┤                       ├─────────────────────────────────────┤
-  │ • File .env (Nằm trong .gitignore)  │                       │ • AWS Secrets Manager / SSM Param   │
-  │ • File .env.example (Public mẫu)    │                       │ • HashiCorp Vault                   │
-  │ • Không bao giờ commit secret thật  │                       │ • GCP Secret Manager / Azure Vault  │
-  │                                     │                       │ • Kubernetes Secrets / Doppler      │
-  └─────────────────────────────────────┘                       └─────────────────────────────────────┘
+```mermaid
+flowchart TD
+    ROOT["SECRET MANAGEMENT HIERARCHY"]
+    ROOT --> LOCAL["LOCAL DEVELOPMENT<br/>• File .env (Nằm trong .gitignore)<br/>• File .env.example (Public mẫu)<br/>• Không bao giờ commit secret thật"]
+    ROOT --> PROD["ENTERPRISE / PRODUCTION<br/>• AWS Secrets Manager / SSM Param<br/>• HashiCorp Vault<br/>• GCP Secret Manager / Azure Vault<br/>• Kubernetes Secrets / Doppler"]
 ```
 
 #### Quy tắc quản trị Secrets:
@@ -246,14 +212,12 @@ module.exports = envSchema;
 
 NestJS cung cấp gói giải pháp `@nestjs/config` chuẩn hóa toàn bộ việc quản lý cấu hình:
 
-```text
-  [AppModule] ──► ConfigModule.forRoot({ isGlobal: true, validationSchema })
-                        │
-                        ▼
-  [Any Service] ──► Constructor(private configService: ConfigService)
-                        │
-                        ▼
-                    this.configService.get<number>('PORT')
+```mermaid
+flowchart TD
+    APP["AppModule"] --> CFG["ConfigModule.forRoot({ isGlobal: true, validationSchema })"]
+    CFG --> SVC["Any Service"]
+    SVC --> CTOR["Constructor(private configService: ConfigService)"]
+    CTOR --> GET["this.configService.get&lt;number&gt;('PORT')"]
 ```
 
 #### Cấu hình chi tiết trong NestJS:

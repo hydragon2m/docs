@@ -8,17 +8,15 @@ Trong những ngày đầu của JavaScript, ngôn ngữ này không có bất k
 
 Để giải quyết bài toán này trên môi trường máy chủ (Server-side), **Node.js** (từ 2009) đã áp dụng đặc tả **CommonJS (CJS)**. Cho đến năm 2015, khi ECMAScript 2015 (ES6) ra đời, chuẩn **ES Modules (ESM)** chính thức được đưa vào đặc tả JavaScript tiêu chuẩn.
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                           SỰ PHÁT TRIỂN CỦA MODULE SYSTEM                               │
-│                                                                                         │
-│  2009: CommonJS (CJS)                2015: ES Modules (ESM)         Hiện nay:                   │
-│  ┌───────────────────────┐           ┌───────────────────────┐      ┌─────────────────────────┐ │
-│  │ require()             │           │ import / export       │      │ Node.js hỗ trợ cả hai,  │ │
-│  │ module.exports        │           │ Chuẩn chính thức JS   │      │ xu hướng chuyển dịch    │ │
-│  │ Đồng bộ (Synchronous) │           │ Bất đồng bộ (Async)   │      │ mạnh mẽ sang ESM        │ │
-│  └───────────────────────┘           └───────────────────────┘      └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph Timeline["SỰ PHÁT TRIỂN CỦA MODULE SYSTEM"]
+        direction LR
+        CJS["2009: CommonJS (CJS)<br/>- require()<br/>- module.exports<br/>- Đồng bộ (Synchronous)"]
+        ESM["2015: ES Modules (ESM)<br/>- import / export<br/>- Chuẩn chính thức JS<br/>- Bất đồng bộ (Async)"]
+        NOW["Hiện nay<br/>- Node.js hỗ trợ cả hai<br/>- Xu hướng chuyển dịch mạnh mẽ sang ESM"]
+        CJS --> ESM --> NOW
+    end
 ```
 
 ---
@@ -64,14 +62,10 @@ Chính nhờ hàm wrapper này mà:
 Một trong những lỗi phổ biến nhất trong Node.js là hiểu sai mối liên hệ giữa `module.exports` và `exports`.
 - Thực chất, `exports` chỉ là một **biến tham chiếu (reference pointer)** trỏ tới cùng vùng nhớ của `module.exports`:
 
-```text
-       ┌───────────────┐
-       │ module.exports│ ──────┐
-       └───────────────┘       │
-                               ▼
-       ┌───────────────┐   ┌────────────────────────┐
-       │    exports    │ ─►│ { ... } (Vùng nhớ Heap)│
-       └───────────────┘   └────────────────────────┘
+```mermaid
+flowchart LR
+    ME["module.exports"] --> HEAP["{ ... } (Vùng nhớ Heap)"]
+    EXP["exports"] --> HEAP
 ```
 
 - Node.js sẽ luôn luôn trả về giá trị của **`module.exports`** khi một module khác `require()` file đó.
@@ -95,14 +89,11 @@ Khi một module được `require()` lần đầu tiên:
 3. Lưu đối tượng `module.exports` đã hoàn thiện vào **`require.cache`**.
 4. Các lần gọi `require()` tiếp theo với cùng đường dẫn tuyệt đối (Absolute Path) sẽ **KHÔNG** đọc lại file hay thực thi lại mã nguồn, mà trả về ngay lập tức giá trị đã lưu trong cache.
 
-```text
-   require('./logger') ────► Kiểm tra require.cache ?
-                                 │
-                 ┌───────────────┴───────────────┐
-                 │ CÓ                            │ KHÔNG
-                 ▼                               ▼
-     Lấy từ require.cache            Đọc file từ Disk & Biên dịch
-     (Không chạy lại code)           Chạy code -> Lưu vào Cache -> Trả về kết quả
+```mermaid
+flowchart TD
+    REQ["require('./logger')"] --> CHECK{"Kiểm tra require.cache ?"}
+    CHECK -->|CÓ| HIT["Lấy từ require.cache<br/>(Không chạy lại code)"]
+    CHECK -->|KHÔNG| MISS["Đọc file từ Disk & Biên dịch<br/>Chạy code -> Lưu vào Cache -> Trả về kết quả"]
 ```
 
 ```javascript
@@ -121,14 +112,12 @@ delete require.cache[targetPath];
 #### a. Quy trình nạp 3 giai đoạn của ESM (3-Phase Loading Pipeline)
 Khác với CJS (vốn đọc và thực thi code đồng bộ từ trên xuống dưới tại thời điểm chạy), ES Modules hoạt động bất đồng bộ theo 3 giai đoạn độc lập:
 
-```text
-┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
-│   1. Phân tích & Xây    │     │   2. Khởi tạo liên kết  │     │   3. Đánh giá & Thực thi│
-│      dựng Cây Module    │ ──► │      (Instantiation)    │ ──► │       (Evaluation)      │
-│     (Construction)      │     │                         │     │                         │
-│ Tải & Parse thành AST   │     │ Tạo Live Bindings trong │     │ Chạy mã nguồn JS thực   │
-│ Xác định module graph   │     │ bộ nhớ (chưa gán giá trị│     │ tế và gán giá trị biến  │
-└─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
+```mermaid
+flowchart LR
+    C["1. Phân tích & Xây dựng Cây Module<br/>(Construction)<br/>- Tải & Parse thành AST<br/>- Xác định module graph"]
+    I["2. Khởi tạo liên kết<br/>(Instantiation)<br/>- Tạo Live Bindings trong bộ nhớ (chưa gán giá trị)"]
+    E["3. Đánh giá & Thực thi<br/>(Evaluation)<br/>- Chạy mã nguồn JS thực tế và gán giá trị biến"]
+    C --> I --> E
 ```
 
 1. **Construction (Xây dựng):** Node.js tìm kiếm tất cả các file được import, tải nội dung và phân tích cú pháp (Parsing) thành Module Record. Toàn bộ đồ thị phụ thuộc (Module Dependency Graph) được xây dựng hoàn tất trước khi bất kỳ dòng code nào chạy.
@@ -175,25 +164,14 @@ export const dbConnection = await createConnection({ host: 'localhost', port: 54
 
 Node.js xác định một file là CJS hay ESM dựa trên 2 yếu tố: **Phần mở rộng của tệp (.extension)** và **Trường `"type"` trong `package.json` gần nhất**.
 
-```text
-                                  ┌─────────────────────────────┐
-                                  │      Phần mở rộng tệp?      │
-                                  └──────────────┬──────────────┘
-                         ┌───────────────────────┼───────────────────────┐
-                         ▼                       ▼                       ▼
-                     .mjs file               .cjs file               .js file
-                         │                       │                       │
-                         ▼                       ▼                       ▼
-                   Luôn là ESM             Luôn là CJS            Kiểm tra "type" trong
-                                                                   package.json gần nhất
-                                                                         │
-                                                       ┌─────────────────┴─────────────────┐
-                                                       ▼                                   ▼
-                                              "type": "module"                     "type": "commonjs"
-                                                (hoặc không có)
-                                                       │                                   │
-                                                       ▼                                   ▼
-                                                  Xử lý là ESM                        Xử lý là CJS
+```mermaid
+flowchart TD
+    EXT{"Phần mở rộng tệp?"}
+    EXT -->|".mjs file"| ESM1["Luôn là ESM"]
+    EXT -->|".cjs file"| CJS1["Luôn là CJS"]
+    EXT -->|".js file"| PKG{"Kiểm tra \"type\" trong package.json gần nhất"}
+    PKG -->|"\"type\": \"module\" (hoặc không có)"| ESM2["Xử lý là ESM"]
+    PKG -->|"\"type\": \"commonjs\""| CJS2["Xử lý là CJS"]
 ```
 
 - **Quy tắc phạm vi (Scope Rule):** Khai báo `"type"` trong `package.json` áp dụng cho tất cả các file `.js` trong cùng thư mục đó và tất cả các thư mục con, trừ khi một thư mục con chứa một file `package.json` riêng biệt định nghĩa lại `"type"`.
@@ -204,22 +182,13 @@ Node.js xác định một file là CJS hay ESM dựa trên 2 yếu tố: **Ph�
 
 Khi bạn gọi `require(X)` hoặc `import X from '...'`, Node.js thực hiện thuật toán tìm kiếm nghiêm ngặt theo các bước sau:
 
-```text
-    ┌─────────────────────────────────────────────────────────┐
-    │                    BẮT ĐẦU TÌM KIẾM                     │
-    └────────────────────────────┬────────────────────────────┘
-                                 │
-          ┌──────────────────────┴──────────────────────┐
-          ▼ X là Core Module? (vd: 'fs', 'node:path')   ▼
-         CÓ ──► Trả về Core Module tích hợp sẵn         │ KHÔNG
-                                                        │
-          ┌─────────────────────────────────────────────┘
-          ▼ X bắt đầu bằng './', '../', '/' ?
-         CÓ ──► File Path Resolution (Tìm tệp/thư mục tương đối/tuyệt đối)
-          │
-          │ KHÔNG
-          ▼
-     node_modules Resolution (Tìm kiếm theo phả hệ thư mục cha)
+```mermaid
+flowchart TD
+    START["BẮT ĐẦU TÌM KIẾM"] --> Q1{"X là Core Module?<br/>(vd: 'fs', 'node:path')"}
+    Q1 -->|CÓ| CORE["Trả về Core Module tích hợp sẵn"]
+    Q1 -->|KHÔNG| Q2{"X bắt đầu bằng './', '../', '/' ?"}
+    Q2 -->|CÓ| FILE["File Path Resolution<br/>(Tìm tệp/thư mục tương đối/tuyệt đối)"]
+    Q2 -->|KHÔNG| NODE["node_modules Resolution<br/>(Tìm kiếm theo phả hệ thư mục cha)"]
 ```
 
 #### a. File Paths Resolution (Đường dẫn tệp)
@@ -267,16 +236,20 @@ Các package hiện đại sử dụng trường `"exports"` trong `package.json
 
 Khi dự án đang trong quá trình chuyển đổi giữa hai hệ thống module, bạn sẽ gặp các trường hợp tương tác qua lại:
 
-```text
-┌───────────────────────────────┐               ┌───────────────────────────────┐
-│     ES MODULE (ESM) FILE      │               │     COMMONJS (CJS) FILE       │
-│                               │               │                               │
-│  import cjs from './cjs.cjs'  │ ────────────► │  module.exports = { a: 1 }    │
-│  (Thành công qua Default)     │               │                               │
-│                               │               │                               │
-│  const m = await import('esm')│ ◄──────────── │  const esm = require('./esm') │
-│  (Dynamic import thành công)  │               │  (LỖI! Không thể require ESM) │
-└───────────────────────────────┘               └───────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph ESM["ES MODULE (ESM) FILE"]
+        E1["import cjs from './cjs.cjs'<br/>(Thành công qua Default)"]
+        E2["const m = await import('esm')<br/>(Dynamic import thành công)"]
+    end
+
+    subgraph CJS["COMMONJS (CJS) FILE"]
+        C1["module.exports = { a: 1 }"]
+        C2["const esm = require('./esm')<br/>(LỖI! Không thể require ESM)"]
+    end
+
+    E1 --> C1
+    C2 --> E2
 ```
 
 #### a. Import CommonJS từ ES Modules
@@ -315,16 +288,10 @@ Khi dự án đang trong quá trình chuyển đổi giữa hai hệ thống mod
 
 Hiện tượng Circular Dependency xảy ra khi Module A require Module B, và Module B lại require ngược lại Module A.
 
-```text
-          ┌─────────────┐
-          │  Module A   │
-          └──────┬──────┘
-             ▲   │
-   require(A)│   │require(B)
-             │   ▼
-          ┌─────────────┐
-          │  Module B   │
-          └─────────────┘
+```mermaid
+flowchart TD
+    ModA["Module A"] -->|"require(B)"| ModB["Module B"]
+    ModB -->|"require(A)"| ModA
 ```
 
 #### a. Cách CommonJS xử lý Circular Dependency

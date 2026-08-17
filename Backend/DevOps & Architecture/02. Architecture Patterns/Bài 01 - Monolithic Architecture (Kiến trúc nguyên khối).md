@@ -6,26 +6,28 @@
 * **Single Database:** Toàn bộ các module cùng chia sẻ và tương tác với một cơ sở dữ liệu quan hệ (PostgreSQL / MySQL) duy nhất.
 * **Single Deployment Unit:** Toàn bộ ứng dụng được build thành một file thực thi hoặc một Docker Image duy nhất và triển khai đồng loạt.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                 MONOLITHIC BACKEND APPLICATION              │
-│                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ Auth Module  │  │ User Module  │  │   Order Module    │  │
-│  └──────┬───────┘  └──────┬───────┘  └─────────┬─────────┘  │
-│         │                 │                    │            │
-│  ┌──────┴───────┐  ┌──────┴───────┐  ┌─────────┴─────────┐  │
-│  │Payment Module│  │Product Module│  │Notification Module│  │
-│  └──────┬───────┘  └──────┬───────┘  └─────────┬─────────┘  │
-│         └─────────────────┼────────────────────┘            │
-│                           ▼ (In-Memory Function Calls)      │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-                            ▼
-              ┌───────────────────────────┐
-              │  Single Shared Database   │
-              │   (PostgreSQL / MySQL)    │
-              └───────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Monolith["MONOLITHIC BACKEND APPLICATION"]
+        direction TB
+        subgraph Row1[" "]
+            direction LR
+            Auth["Auth Module"]
+            User["User Module"]
+            Order["Order Module"]
+        end
+        subgraph Row2[" "]
+            direction LR
+            Payment["Payment Module"]
+            Product["Product Module"]
+            Notification["Notification Module"]
+        end
+        Row1 <-->|"In-Memory Function Calls"| Row2
+    end
+
+    DB[("Single Shared Database<br/>(PostgreSQL / MySQL)")]
+
+    Monolith --> DB
 ```
 
 ---
@@ -51,21 +53,24 @@
 
 **Modular Monolith** là mô hình chuẩn mực giúp giữ nguyên sự đơn giản trong triển khai của Monolith nhưng đảm bảo tính cô lập, ranh giới rõ ràng theo nguyên lý **Domain-Driven Design (DDD)**.
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│                    MODULAR MONOLITH APPLICATION                  │
-│                                                                  │
-│  ┌────────────────────────┐          ┌────────────────────────┐  │
-│  │      Order Module      │          │     Payment Module     │  │
-│  │  ┌──────────────────┐  │          │  ┌──────────────────┐  │  │
-│  │  │ Internal Logic   │  │          │  │ Internal Logic   │  │  │
-│  │  │ & Private Entity │  │          │  │ & Private Entity │  │  │
-│  │  └────────┬─────────┘  │          │  └────────▲─────────┘  │  │
-│  │           ▼            │          │           │            │  │
-│  │   [Public Interface]───┼──────────┼───────────┘            │  │
-│  │   (Contract/Facade)    │ (In-mem) │  (Chỉ gọi qua Public)  │  │
-│  └────────────────────────┘          └────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph App["MODULAR MONOLITH APPLICATION"]
+        direction LR
+        subgraph OrderMod["Order Module"]
+            direction TB
+            OrderInternal["Internal Logic<br/>& Private Entity"]
+            OrderFacade["Public Interface<br/>(Contract/Facade)"]
+            OrderInternal --> OrderFacade
+        end
+
+        subgraph PaymentMod["Payment Module"]
+            direction TB
+            PaymentInternal["Internal Logic<br/>& Private Entity"]
+        end
+
+        OrderFacade -->|"In-Memory (Chỉ gọi qua Public)"| PaymentInternal
+    end
 ```
 
 * **Nguyên tắc đóng gói:** Mỗi Module chỉ phơi bày (expose) một `PublicService` hoặc `Facade Interface`. Các module khác tuyệt đối không được truy cập trực tiếp vào `Entity` hay `Repository` nội bộ của module này.

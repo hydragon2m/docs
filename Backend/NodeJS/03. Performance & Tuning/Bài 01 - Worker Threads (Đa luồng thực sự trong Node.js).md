@@ -26,12 +26,13 @@ Mô-đun cung cấp các thuộc tính cốt lõi để điều phối luồng:
 * **`Worker`**: Class dùng để khởi tạo một luồng con mới.
 * **`parentPort`**: Kênh giao tiếp gửi tin nhắn ngược lại từ luồng con về luồng chính.
 
-```text
-       [LUỒNG CHÍNH (isMainThread = true)]
-             │
-             ├────────── 1. Khởi tạo new Worker(__filename) ───► [LUỒNG CON (isMainThread = false)]
-             │                                                         │
-             │◄───────── 2. Gửi kết quả (parentPort.postMessage) ──────┤
+```mermaid
+sequenceDiagram
+    participant Main as LUỒNG CHÍNH (isMainThread = true)
+    participant Worker as LUỒNG CON (isMainThread = false)
+    
+    Main->>Worker: 1. Khởi tạo new Worker(__filename)
+    Worker-->>Main: 2. Gửi kết quả (parentPort.postMessage)
 ```
 
 ---

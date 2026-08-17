@@ -47,12 +47,14 @@ Nếu bạn muốn quan sát trực quan bằng giao diện đồ họa:
 
 Khi phân tích CPU Profile bằng Chrome DevTools hoặc các công cụ nâng cao như `clinic.js`, bạn sẽ được xem một biểu đồ dạng ngọn lửa (Flamegraph):
 
-```text
-  [Hàm D] ───► Ngốn thời gian của CPU nhiều nhất (Đỉnh ngọn lửa)
-  [Hàm C]
-  [Hàm B]
-  [Hàm A (Hàm Gốc)]
-  ───────────────────────────────────────► Trục X: Chiều rộng thể hiện tổng thời gian CPU xử lý
+```mermaid
+flowchart BT
+    subgraph Flamegraph["Cấu trúc Flamegraph (Trục Y: Call Stack Depth | Trục X: Chiều rộng thể hiện tổng thời gian CPU xử lý)"]
+        direction BT
+        A["Hàm A (Hàm Gốc)"] --> B["Hàm B"]
+        B --> C["Hàm C"]
+        C --> D["Hàm D<br/>(Đỉnh ngọn lửa - Ngốn thời gian của CPU nhiều nhất)"]
+    end
 ```
 
 * **Trục Y (Chiều cao):** Thể hiện **Call Stack Depth (Độ sâu của ngăn xếp cuộc gọi)**. Hàm nằm ở trên được gọi bởi hàm nằm ở dưới.

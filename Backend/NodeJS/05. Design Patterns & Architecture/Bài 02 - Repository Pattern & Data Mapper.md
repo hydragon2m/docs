@@ -19,19 +19,17 @@ Nếu sau này bạn có nhu cầu:
 
 Trong thế giới ORM (như TypeORM), có hai trường phái thiết kế truy xuất dữ liệu chính:
 
-```text
-  [ACTIVE RECORD PATTERN]                      [DATA MAPPER PATTERN]
-  
-  ┌───────────────────────────┐                ┌───────────────────────────┐
-  │        User Entity        │                │        User Entity        │ (Chỉ chứa thuộc tính
-  │ - Thuộc tính (id, name...)│                │ - Thuộc tính (id, name...)│  & logic đối tượng)
-  │ - Hàm DB (save, find...)  │                └───────────────────────────┘
-  └───────────────────────────┘                              ▲
-                                                             │ (Lưu/Đọc dữ liệu qua Repo)
-                                               ┌───────────────────────────┐
-                                               │      UserRepository       │
-                                               │ - save(user), findById()  │
-                                               └───────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph AR["ACTIVE RECORD PATTERN"]
+        AR_User["User Entity<br/>- Thuộc tính (id, name...)<br/>- Hàm DB (save, find...)"]
+    end
+
+    subgraph DM["DATA MAPPER PATTERN"]
+        DM_User["User Entity<br/>- Thuộc tính (id, name...)<br/>(Chỉ chứa thuộc tính & logic đối tượng)"]
+        DM_Repo["UserRepository<br/>- save(user), findById()"]
+        DM_Repo -->|"Lưu/Đọc dữ liệu qua Repo"| DM_User
+    end
 ```
 
 #### a. Active Record Pattern (Thiết kế thực thể động)

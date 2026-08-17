@@ -13,22 +13,14 @@ Trước đây, lập trình viên phải dùng các kỹ thuật lách luật n
 
 Kết nối WebSocket ban đầu bắt đầu bằng một HTTP request thông thường, sau đó nâng cấp lên WebSocket thông qua quá trình bắt tay:
 
-```text
-  [Client]                                              [Server]
-     │                                                     │
-     ├────────── 1. HTTP GET /chat ───────────────────────►│
-     │            Headers:                                 │
-     │            - Upgrade: websocket                     │
-     │            - Connection: Upgrade                    │
-     │            - Sec-WebSocket-Key: dGhlIHNhbXBsZ...     │
-     │                                                     │
-     │◄───────── 2. HTTP 101 Switching Protocols ──────────┤
-     │            Headers:                                 │
-     │            - Upgrade: websocket                     │
-     │            - Connection: Upgrade                    │
-     │            - Sec-WebSocket-Accept: s3pPLMBiT...     │
-     │                                                     │
-  [Kênh truyền dữ liệu hai chiều WebSockets (TCP thô)]
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    
+    Client->>Server: 1. HTTP GET /chat<br/>Headers:<br/>- Upgrade: websocket<br/>- Connection: Upgrade<br/>- Sec-WebSocket-Key: dGhlIHNhbXBsZ...
+    Server-->>Client: 2. HTTP 101 Switching Protocols<br/>Headers:<br/>- Upgrade: websocket<br/>- Connection: Upgrade<br/>- Sec-WebSocket-Accept: s3pPLMBiT...
+    Note over Client,Server: Kênh truyền dữ liệu hai chiều WebSockets (TCP thô)
 ```
 
 ---

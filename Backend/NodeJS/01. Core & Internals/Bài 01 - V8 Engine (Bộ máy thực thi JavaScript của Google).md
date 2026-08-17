@@ -8,18 +8,16 @@ Node.js thực chất là một môi trường chạy (Runtime Environment) vi�
 * **Lõi bất đồng bộ & I/O:** **libuv** (Thư viện C++) đảm nhận nhiệm vụ xử lý File System, Network, Thread Pool.
 * **C++ Bindings:** Cầu nối giúp JavaScript gọi được các tính năng hệ thống viết bằng C++ của OS.
 
-```text
-┌────────────────────────────────────────────────────────┐
-│                        NODE.JS                         │
-│                                                        │
-│   ┌────────────────────┐      ┌────────────────────┐   │
-│   │     V8 ENGINE      │      │       LIBUV        │   │
-│   │ (Biên dịch & Chạy) │      │ (Event Loop & I/O) │   │
-│   └─────────┬──────────┘      └─────────┬──────────┘   │
-└─────────────┼───────────────────────────┼──────────────┘
-              └──────────────┬────────────┘
-                    C++ Bindings (Cầu nối)
+```mermaid
+flowchart TD
+    subgraph NodeJS["NODE.JS"]
+        V8["V8 ENGINE<br/>(Biên dịch & Chạy)"]
+        LIBUV["LIBUV<br/>(Event Loop & I/O)"]
+    end
+    V8 --> CB["C++ Bindings (Cầu nối)"]
+    LIBUV --> CB
 ```
+
 
 ---
 
@@ -34,22 +32,15 @@ V8 là công cụ biên dịch trực tiếp (JIT - Just-In-Time Compiler). Thay
 
 Khi bạn chạy một file Node.js, V8 thực hiện quy trình biên dịch qua các bước nghiêm ngặt sau:
 
-```text
-  [Mã nguồn JS] 
-        │
-        ▼ (Parser)
-  [Abstract Syntax Tree - AST]
-        │
-        ▼ (Ignition Interpreter)
-  [Bytecode] ───► Chạy chương trình ngay lập tức
-        │
-        ├───► [Ghi nhận phản hồi - Profiling Feedback] (Phát hiện hàm chạy nhiều lần - Hot Functions)
-        │
-        ▼ (Turbofan Optimizing Compiler)
-  [Mã máy đã tối ưu - Optimized Machine Code] 
-        │
-        ▼ (Nếu giả định tối ưu bị sai - ví dụ thay đổi kiểu dữ liệu đột ngột)
-  [Hạ tối ưu - Deoptimization] ───► Quay lại chạy Bytecode bằng Ignition
+```mermaid
+flowchart TD
+    JS["Mã nguồn JS"] -->|Parser| AST["Abstract Syntax Tree - AST"]
+    AST -->|Ignition Interpreter| Bytecode["Bytecode"]
+    Bytecode --> Run["Chạy chương trình ngay lập tức"]
+    Bytecode --> Feedback["Ghi nhận phản hồi - Profiling Feedback<br/>(Phát hiện hàm chạy nhiều lần - Hot Functions)"]
+    Feedback -->|Turbofan Optimizing Compiler| OptCode["Mã máy đã tối ưu - Optimized Machine Code"]
+    OptCode -->|Nếu giả định tối ưu bị sai - ví dụ thay đổi kiểu dữ liệu đột ngột| Deopt["Hạ tối ưu - Deoptimization"]
+    Deopt -->|Quay lại chạy Bytecode bằng Ignition| Bytecode
 ```
 
 #### Bước 1: Phân tích cú pháp (Parsing) & Tạo cây AST

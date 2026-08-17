@@ -3,11 +3,13 @@
 ### 1. Kim tự tháp kiểm thử (Testing Pyramid)
 Trong phát triển phần mềm chuyên nghiệp, kiểm thử (Testing) được cấu trúc theo mô hình kim tự tháp:
 
-```text
-       /   E2E Test   \      ◄── Số lượng ít, chạy chậm nhất, chi phí cao nhất
-      /  Integration   \     ◄── Kiểm thử tích hợp giữa các bộ phận
-     /     Unit Test     \    ◄── Số lượng nhiều nhất, chạy cực nhanh, chi phí thấp nhất
-    ───────────────────────
+```mermaid
+flowchart TD
+    E2E["E2E Test<br/>(Số lượng ít, chạy chậm nhất, chi phí cao nhất)"]
+    INT["Integration Test<br/>(Kiểm thử tích hợp giữa các bộ phận)"]
+    UNIT["Unit Test<br/>(Số lượng nhiều nhất, chạy cực nhanh, chi phí thấp nhất)"]
+    
+    E2E --- INT --- UNIT
 ```
 
 * **Unit Test (Kiểm thử đơn vị):** Kiểm tra tính đúng đắn của từng khối code nhỏ nhất hoàn toàn độc lập (thường là một hàm hoặc một phương thức của Class). Mọi giao tiếp với bên ngoài (gọi DB, gọi API) đều bắt buộc phải được giả lập (**Mock**).

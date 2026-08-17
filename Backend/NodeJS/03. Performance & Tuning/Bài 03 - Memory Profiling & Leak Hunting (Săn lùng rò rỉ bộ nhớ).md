@@ -48,13 +48,13 @@ Mở Chrome DevTools (F12) -> Chọn tab **Memory** -> Click **Load** và chọn
 
 Báo cáo phân tích sẽ cung cấp hai thông số đo lường cực kỳ quan trọng:
 
-```text
-  ┌─────────────────────────────────────────────────────────┐
-  │ OBJECT             │ SHALLOW SIZE    │ RETAINED SIZE    │
-  ├────────────────────┼─────────────────┼──────────────────┤
-  │ leakArray          │ 80 bytes        │ 120,000,500 bytes│ <── Retained Size khổng lồ!
-  │   └─ (object)      │ 24 bytes        │ 120,000,420 bytes│
-  └─────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph HeapReport["Báo cáo phân tích Heap Snapshot"]
+        A["leakArray<br/>Shallow Size: 80 bytes | Retained Size: 120,000,500 bytes ⚠️ (Retained Size khổng lồ!)"]
+        B["(object)<br/>Shallow Size: 24 bytes | Retained Size: 120,000,420 bytes"]
+        A --> B
+    end
 ```
 
 1. **Shallow Size:** Dung lượng bộ nhớ thực tế được cấp phát cho **bản thân đối tượng đó** (không bao gồm các đối tượng con mà nó tham chiếu tới). Thường chỉ vài chục đến vài trăm byte.
@@ -67,9 +67,12 @@ Báo cáo phân tích sẽ cung cấp hai thông số đo lường cực kỳ qu
 
 Để tìm lỗi rò rỉ bộ nhớ một cách khoa học, bạn nên thực hiện quy trình so sánh **3 Snapshots (3-Snapshot Technique)**:
 
-```text
-  [Chụp Snapshot 1] ──► [Bắn tải chịu tải vừa phải] ──► [Chụp Snapshot 2] ──► [Đợi 10 giây cho GC dọn] ──► [Chụp Snapshot 3]
-  (Môi trường rảnh)     (Tạo các đối tượng)             (Dữ liệu rác còn kẹt)   (Chỉ giữ lại leak thực sự)
+```mermaid
+flowchart LR
+    S1["Chụp Snapshot 1<br/>(Môi trường rảnh)"] --> Load["Bắn tải chịu tải vừa phải<br/>(Tạo các đối tượng)"]
+    Load --> S2["Chụp Snapshot 2<br/>(Dữ liệu rác còn kẹt)"]
+    S2 --> Wait["Đợi 10 giây cho GC dọn"]
+    Wait --> S3["Chụp Snapshot 3<br/>(Chỉ giữ lại leak thực sự)"]
 ```
 
 1. **Snapshot 1:** Chụp khi ứng dụng vừa khởi động và ở trạng thái nghỉ (Baseline).

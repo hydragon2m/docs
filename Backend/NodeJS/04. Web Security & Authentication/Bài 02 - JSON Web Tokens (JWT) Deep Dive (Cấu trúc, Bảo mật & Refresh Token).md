@@ -10,14 +10,12 @@ Thông tin này có thể được kiểm chứng và đáng tin cậy vì nó �
 ### 2. Cấu trúc của một JWT
 Một chuỗi JWT hoàn chỉnh bao gồm 3 phần được phân tách với nhau bằng dấu chấm (`.`): `Header.Payload.Signature`
 
-```text
-  ┌────────────────────────────────────────────────────────┐
-  │ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9                   │ ◄─── 1. Header (Thuật toán ký)
-  │ .                                                      │
-  │ eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0    │ ◄─── 2. Payload (Dữ liệu người dùng)
-  │ .                                                      │
-  │ SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c            │ ◄─── 3. Signature (Chữ ký xác thực)
-  └────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    H["1. Header (Thuật toán ký)<br/>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"]
+    P["2. Payload (Dữ liệu người dùng)<br/>eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0"]
+    S["3. Signature (Chữ ký xác thực)<br/>SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"]
+    H -->|"."| P -->|"."| S
 ```
 
 #### a. Header (Tiêu đề)
@@ -43,14 +41,16 @@ Vì JWT là Stateless, Server không thể chủ động thu hồi (revoke) Toke
 
 Để giảm thiểu rủi ro này, chúng ta sử dụng thiết kế **Refresh Token Pattern**:
 
-```text
-  [Client]                                                        [Server]
-     │                                                               │
-     ├────────── 1. Gửi Access Token hết hạn ───────────────────────►│ (Từ chối - 401 Unauthorized)
-     │                                                               │
-     ├────────── 2. Gửi Refresh Token tới endpoint /refresh ────────►│ (Kiểm tra trong Database/Redis)
-     │                                                               │
-     │◄───────── 3. Cấp cặp Token mới (Access Token + Refresh Token)─┤ (Cập nhật Token mới trong DB)
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: 1. Gửi Access Token hết hạn
+    Note over Server: Từ chối - 401 Unauthorized
+    Client->>Server: 2. Gửi Refresh Token tới endpoint /refresh
+    Note over Server: Kiểm tra trong Database/Redis
+    Server-->>Client: 3. Cấp cặp Token mới (Access Token + Refresh Token)
+    Note over Server: Cập nhật Token mới trong DB
 ```
 
 1. **Access Token (Thời hạn ngắn - e.g. 15 phút):** Được đính kèm vào tất cả các Request gọi API. Vì thời hạn rất ngắn, nếu bị lộ thì thiệt hại cũng sẽ nhanh chóng kết thúc.

@@ -20,19 +20,16 @@ Quá trình bảo mật của TLS sử dụng hai phương thức mã hóa:
 
 Trước khi bất kỳ dữ liệu HTTP nào được truyền đi, Client và Server phải thực hiện quy trình bắt tay TLS để thiết lập kết nối an toàn:
 
-```text
-  [Client]                                              [Server]
-     │                                                     │
-     ├─────────── 1. ClientHello (Hỗ trợ TLS...) ─────────►│
-     │                                                     │
-     │◄── 2. ServerHello + Certificate (Chứng chỉ chứa PubKey) ─┤
-     │                                                     │
-     ├────── 3. Xác thực chứng chỉ, tạo Pre-Master Secret ─►│
-     │          (Mã hóa bằng Public Key của Server)        │
-     │                                                     │
-     │◄── 4. Tạo Session Key, gửi thông báo mã hóa ────────┤
-     │                                                     │
-  [Truyền dữ liệu HTTP đã được mã hóa bằng Session Key]
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    
+    Client->>Server: 1. ClientHello (Hỗ trợ TLS...)
+    Server-->>Client: 2. ServerHello + Certificate (Chứng chỉ chứa PubKey)
+    Client->>Server: 3. Xác thực chứng chỉ, tạo Pre-Master Secret<br/>(Mã hóa bằng Public Key của Server)
+    Server-->>Client: 4. Tạo Session Key, gửi thông báo mã hóa
+    Note over Client,Server: Truyền dữ liệu HTTP đã được mã hóa bằng Session Key
 ```
 
 ---

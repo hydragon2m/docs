@@ -19,21 +19,20 @@ Khi bạn sử dụng tính năng *"Đăng nhập bằng Google"* hoặc *"Đăn
 
 Đây là luồng chuẩn, bảo mật nhất của OAuth2 dành cho các ứng dụng có Server Web truyền thống (Backend):
 
-```text
-  [Người Dùng]               [Ứng Dụng (Backend)]          [OAuth Server (Google)]
-       │                              │                              │
-       ├─ 1. Bấm 'Đăng nhập Google' ─►│                              │
-       │                              ├─ 2. Redirect tới Google ────►│ (Hiển thị trang xin quyền)
-       │◄─────────────────────────────┤                              │
-       │                              │                              │
-       ├─ 3. Đồng ý cấp quyền ────────┼─────────────────────────────►│
-       │◄─────────────────────────────┼── 4. Redirect về uri kèm ────┤
-       │                              │     Mã code (auth_code)      │
-       │                              │                              │
-       │                              ├─ 5. Gửi auth_code + secret ─►│ (Xác thực thông tin hợp lệ)
-       │                              │                              │
-       │                              │◄─ 6. Trả về Access Token ────┤
-       │                              │      (& ID Token)            │
+```mermaid
+sequenceDiagram
+    participant User as Người Dùng
+    participant App as Ứng Dụng (Backend)
+    participant Google as OAuth Server (Google)
+
+    User->>App: 1. Bấm 'Đăng nhập Google'
+    App-->>User: 2. Redirect tới Google
+    Note over Google: Hiển thị trang xin quyền
+    User->>Google: 3. Đồng ý cấp quyền
+    Google-->>User: 4. Redirect về uri kèm Mã code (auth_code)
+    App->>Google: 5. Gửi auth_code + secret
+    Note over Google: Xác thực thông tin hợp lệ
+    Google-->>App: 6. Trả về Access Token (& ID Token)
 ```
 
 #### Bước 1 & 2: Redirect tới trang ủy quyền

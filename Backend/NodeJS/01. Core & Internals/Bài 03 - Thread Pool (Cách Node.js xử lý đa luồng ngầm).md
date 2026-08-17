@@ -22,19 +22,20 @@ libuv xử lý các tác vụ bất đồng bộ theo hai cơ chế hoàn toàn 
 
 Mặc định, libuv khởi tạo một Thread Pool gồm **4 luồng (workers)** chạy song song dưới nền C++:
 
-```text
-  [Luồng chính JS (V8)] ───► Gọi tác vụ nặng (ví dụ: fs.readFile)
-         │
-         ▼ (libuv nhận yêu cầu và đẩy vào Hàng đợi)
-  ┌────────────────────────────────────────────────────────┐
-  │                   LIBUV THREAD POOL                    │
-  │                                                        │
-  │  [Thread 1]       [Thread 2]       [Thread 3]       [Thread 4]
-  │  (Đang xử lý)    (Đang xử lý)     (Rảnh rỗi)       (Rảnh rỗi)  │
-  └──────┬─────────────────────────────────────────────────┘
-         │
-         ▼ (Tác vụ chạy xong dưới nền)
-  [Đẩy Callback vào Hàng đợi Poll of Event Loop] ───► Chạy callback trên luồng chính
+```mermaid
+flowchart TD
+    MainJS["Luồng chính JS (V8)"] -->|Gọi tác vụ nặng (ví dụ: fs.readFile)| libuv["libuv nhận yêu cầu và đẩy vào Hàng đợi"]
+    libuv --> ThreadPool
+    
+    subgraph ThreadPool["LIBUV THREAD POOL"]
+        T1["Thread 1<br/>(Đang xử lý)"]
+        T2["Thread 2<br/>(Đang xử lý)"]
+        T3["Thread 3<br/>(Rảnh rỗi)"]
+        T4["Thread 4<br/>(Rảnh rỗi)"]
+    end
+
+    ThreadPool -->|Tác vụ chạy xong dưới nền| PollQueue["Đẩy Callback vào Hàng đợi Poll of Event Loop"]
+    PollQueue --> Done["Chạy callback trên luồng chính"]
 ```
 
 ---

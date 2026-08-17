@@ -6,36 +6,36 @@
 * **Triển khai và Mở rộng độc lập (Independently Deployable & Scalable):** Mỗi service sở hữu quy trình CI/CD và vòng đời release riêng biệt mà không ảnh hưởng tới các dịch vụ khác.
 * **Cơ sở dữ liệu riêng biệt (Database per Service):** Mỗi service sở hữu toàn quyền quản lý CSDL riêng của mình (Polyglot Persistence), các service khác không được phép truy cập trực tiếp vào DB của nhau.
 
-```text
-                               ┌─────────────────────────────┐
-                               │   Client (Web / Mobile)     │
-                               └──────────────┬──────────────┘
-                                              │ HTTP Requests
-                                              ▼
-                               ┌─────────────────────────────┐
-                               │     API GATEWAY (Proxy)     │
-                               │  - Routing & Load Balancing │
-                               │  - Centralized Auth (JWT)   │
-                               │  - Rate Limiting            │
-                               └──────┬───────┬───────┬──────┘
-                                      │       │       │
-            ┌─────────────────────────┘       │       └─────────────────────────┐
-            │ (gRPC/HTTP)                     │ (gRPC/HTTP)                     │ (gRPC/HTTP)
-            ▼                                 ▼                                 ▼
-┌────────────────────────┐       ┌────────────────────────┐       ┌────────────────────────┐
-│      Auth Service      │       │     Order Service      │       │    Payment Service     │
-│  ┌──────────────────┐  │       │  ┌──────────────────┐  │       │  ┌──────────────────┐  │
-│  │ Node.js/NestJS   │  │       │  │ Node.js/NestJS   │  │       │  │ Golang / Java    │  │
-│  └────────┬─────────┘  │       │  └────────┬─────────┘  │       │  └────────┬─────────┘  │
-│           │            │       │           │            │       │           │            │
-│           ▼            │       │           ▼            │       │           ▼            │
-│      [Auth DB]         │       │       [Order DB]       │       │      [Payment DB]      │
-│     (PostgreSQL)       │       │       (PostgreSQL)     │       │        (MongoDB)       │
-└────────────────────────┘       └───────────┬────────────┘       └───────────▲────────────┘
-                                             │                                │
-                                             └────────► [Message Broker] ─────┘
-                                                    (RabbitMQ / Kafka)
-                                                    Async Events
+```mermaid
+flowchart TD
+    Client(["Client (Web / Mobile)"]) -->|"HTTP Requests"| Gateway["API GATEWAY (Proxy)<br/>• Routing & Load Balancing<br/>• Centralized Auth (JWT)<br/>• Rate Limiting"]
+
+    subgraph AuthSvc["Auth Service"]
+        AuthApp["Node.js / NestJS"]
+        AuthDB[("Auth DB<br/>(PostgreSQL)")]
+        AuthApp --> AuthDB
+    end
+
+    subgraph OrderSvc["Order Service"]
+        OrderApp["Node.js / NestJS"]
+        OrderDB[("Order DB<br/>(PostgreSQL)")]
+        OrderApp --> OrderDB
+    end
+
+    subgraph PaymentSvc["Payment Service"]
+        PaymentApp["Golang / Java"]
+        PaymentDB[("Payment DB<br/>(MongoDB)")]
+        PaymentApp --> PaymentDB
+    end
+
+    Broker{{"Message Broker<br/>(RabbitMQ / Kafka)<br/>Async Events"}}
+
+    Gateway -->|"gRPC / HTTP"| AuthApp
+    Gateway -->|"gRPC / HTTP"| OrderApp
+    Gateway -->|"gRPC / HTTP"| PaymentApp
+
+    OrderApp -->|"Async Events"| Broker
+    Broker -->|"Async Events"| PaymentApp
 ```
 
 ---
@@ -59,8 +59,10 @@ Dịch vụ gửi thông điệp (Event/Message) vào trung gian (Broker) và **
 
 ### 2. Thành phần thiết yếu: API Gateway & Service Discovery
 
-```text
-Client ──► [API Gateway] ──(Tra cứu địa chỉ IP qua DNS/Consul)──► [Order Service Instance #3]
+```mermaid
+flowchart LR
+    Client(["Client"]) --> Gateway["API Gateway"]
+    Gateway -->|"Tra cứu địa chỉ IP qua DNS/Consul"| OrderInstance["Order Service Instance #3"]
 ```
 
 * **API Gateway Pattern:** Đóng vai trò là cửa ngõ duy nhất (Single Entry Point) cho toàn bộ client bên ngoài:

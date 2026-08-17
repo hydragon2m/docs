@@ -34,14 +34,22 @@ Node.js hoạt động dựa trên cơ chế đơn luồng (Single-threaded Even
 ### 1. Cấu trúc tệp cấu hình Nginx (`nginx.conf`)
 Cấu hình Nginx được tổ chức theo dạng cây phân cấp lồng nhau:
 
-```text
-main (Global Context: user, worker_processes, pid)
- └── events (Số kết nối đồng thời: worker_connections)
-      └── http (Cấu hình chung HTTP, Gzip, MIME types, Upstreams)
-           ├── server (Khai báo Virtual Host / Domain / Port)
-           │    ├── location / (Định tuyến URL cụ thể)
-           │    └── location /static (Phục vụ tệp tĩnh)
-           └── server (Virtual Host thứ hai)
+```mermaid
+flowchart TD
+    Main["main (Global Context: user, worker_processes, pid)"]
+    Events["events (Số kết nối đồng thời: worker_connections)"]
+    Http["http (Cấu hình chung HTTP, Gzip, MIME types, Upstreams)"]
+    Server1["server (Khai báo Virtual Host / Domain / Port)"]
+    Server2["server (Virtual Host thứ hai)"]
+    Loc1["location / (Định tuyến URL cụ thể)"]
+    Loc2["location /static (Phục vụ tệp tĩnh)"]
+
+    Main --> Events
+    Events --> Http
+    Http --> Server1
+    Http --> Server2
+    Server1 --> Loc1
+    Server1 --> Loc2
 ```
 
 ---
