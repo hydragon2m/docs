@@ -10,8 +10,8 @@ flowchart TD
     Client1["Client App (Node.js / Go)"] -->|TCP Connection| Postmaster["Postmaster Process (Main Daemon)"]
     Client2["Client App (Python / Java)"] -->|TCP Connection| Postmaster
     
-    Postmaster -->|fork() per connection| BP1["Backend Process 1<br/>(Dedicated Memory / work_mem)"]
-    Postmaster -->|fork() per connection| BP2["Backend Process 2<br/>(Dedicated Memory / work_mem)"]
+    Postmaster -->|fork per connection| Worker1["Backend Process 1<br/>(Dedicated Memory / work_mem)"]
+    Postmaster -->|fork per connection| Worker2["Backend Process 2<br/>(Dedicated Memory / work_mem)"]
     
     subgraph SharedMemory["POSTGRESQL SHARED MEMORY (SRAM)"]
         SB["Shared Buffers<br/>(Data Pages Cache)"]
@@ -20,10 +20,10 @@ flowchart TD
         Locks["Lock Table<br/>(Shared / Exclusive Locks)"]
     end
 
-    BP1 --> SharedMemory
-    SharedMemory --> BP1
-    BP2 --> SharedMemory
-    SharedMemory --> BP2
+    Worker1 --> SharedMemory
+    SharedMemory --> Worker1
+    Worker2 --> SharedMemory
+    SharedMemory --> Worker2
 
     subgraph BackgroundProcesses["HỆ THỐNG TIẾN TRÌNH NỀN (BACKGROUND PROCESSES)"]
         BGWriter["Background Writer<br/>(Ghi dirty pages dần vào disk)"]

@@ -40,7 +40,7 @@ flowchart TD
     FSCache --> WiredTiger
     FSCache --> DataFiles
     DataFiles --> FSCache
-    JournalBuffer -->|fsync() định kỳ <= 100ms| JournalFiles
+    JournalBuffer -->|"fsync() định kỳ <= 100ms"| JournalFiles
     DirtyPages -->|Checkpoint định kỳ 60s| DataFiles
 ```
 
@@ -60,7 +60,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     Start["Bắt đầu dự án mới"] --> Q1{"Dữ liệu có quan hệ mạng lưới phức tạp<br/>& yêu cầu bảo toàn toàn vẹn tham chiếu 100%?"}
-    Q1 -->|Có "Tài chính, Kế toán, ERP"| SQL["Chọn PostgreSQL / Relational DB"]
+    Q1 -->|Có| SQL["Chọn PostgreSQL / Relational DB"]
     Q1 -->|Không| Q2{"Mô hình dữ liệu thay đổi liên tục,<br/>cấu trúc lồng nhau (Catalog, E-commerce, CMS, IoT)?"}
     Q2 -->|Có| Mongo["Chọn MongoDB"]
     Q2 -->|Không| Q3{"Yêu cầu ghi tốc độ cực lớn & Sharding phân tán ngang?"}
