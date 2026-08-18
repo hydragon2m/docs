@@ -175,7 +175,7 @@ function runTestOfStep(step) {
   try {
     let command = '';
     if (step.ext === 'ts') {
-      command = `npx ts-node "${filePath}"`;
+      command = `npx ts-node --compiler-options "{\\\"module\\\":\\\"commonjs\\\"}" "${filePath}"`;
     } else if (step.ext === 'js') {
       command = `node "${filePath}"`;
     } else if (step.ext === 'sql') {

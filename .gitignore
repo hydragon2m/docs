@@ -1,6 +1,7 @@
 node_modules/
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+.study-progress.json
 
 # Bỏ qua toàn bộ file bài tập thực tế do học viên tự làm trong thư mục study
 study/**/*
