@@ -4,7 +4,3 @@ node_modules/
 
 # Bỏ qua toàn bộ file bài tập thực tế do học viên tự làm trong thư mục study
 study/**/*
-# Nhưng KHÔNG bỏ qua các file template mẫu để đẩy lên Git
-!study/**/*.template.*
-!study/**/01. Dockerfile.template
-!study/**/*.proto

@@ -119,7 +119,7 @@ const curriculum = [
   // ==========================================
   // MODULE 4: DEVOPS & ARCHITECTURE
   // ==========================================
-  { id: 'devops-docker-01', module: 'DevOps & Architecture', topic: '01. Docker Mastery', name: '01. Dockerfile', ext: 'template' }, // Đuôi đặc biệt
+  { id: 'devops-docker-01', module: 'DevOps & Architecture', topic: '01. Docker Mastery', name: '01. Dockerfile', ext: '' }, // File không đuôi
   { id: 'devops-docker-02', module: 'DevOps & Architecture', topic: '01. Docker Mastery', name: '02. docker-compose', ext: 'yml' },
   { id: 'devops-docker-03', module: 'DevOps & Architecture', topic: '01. Docker Mastery', name: '03. Docker Networking & Volumes', ext: 'yml' },
   { id: 'devops-arch-01', module: 'DevOps & Architecture', topic: '02. Architecture Patterns', name: '01. Modular Monolith Structure', ext: 'ts' },
@@ -154,17 +154,13 @@ function saveProgress(progress) {
 }
 
 function getFilePath(step, isTemplate = false) {
-  const practiceDir = path.join(__dirname, 'study', step.module, step.topic);
+  const baseDir = isTemplate ? 'templates' : 'study';
+  const practiceDir = path.join(__dirname, baseDir, step.module, step.topic);
   
-  if (step.name === '01. Dockerfile' && step.ext === 'template') {
-    // Trường hợp đặc biệt của Dockerfile
-    return isTemplate 
-      ? path.join(practiceDir, '01. Dockerfile.template')
-      : path.join(practiceDir, '01. Dockerfile');
+  if (step.ext === '') {
+    return path.join(practiceDir, step.name);
   }
-
-  const fileSuffix = isTemplate ? `.template.${step.ext}` : `.${step.ext}`;
-  return path.join(practiceDir, `${step.name}${fileSuffix}`);
+  return path.join(practiceDir, `${step.name}.${step.ext}`);
 }
 
 function runTestOfStep(step) {

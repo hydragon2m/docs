@@ -15,7 +15,7 @@ Chào mừng bạn đến với kho lưu trữ tài liệu và bài tập thực
 ### Bước 2: Clone kho lưu trữ này về máy
 Mở Terminal trên máy của bạn và chạy lệnh sau để tải kho tài liệu về:
 ```bash
-git clone <URL_REPOSITOY_CỦA_BẠN> "Obsidian Vault"
+git clone https://github.com/hydragon2m/docs.git "Obsidian Vault"
 ```
 
 ### Bước 3: Mở thư mục dưới dạng Obsidian Vault
@@ -44,7 +44,7 @@ Thư mục `Backend/` được phân chia thành các Module học tập cốt l
 Khóa học tuân thủ nghiêm ngặt nguyên lý: **"Học đi đôi với hành - Pass bài tập mới mở bài mới"**.
 
 ### Cấu trúc bài tập
-Toàn bộ bài tập thực hành được gom nhóm và tập trung trong thư mục **`study/`** nằm tại gốc của Vault, được chia thành các thư mục con tương ứng với từng module lý thuyết.
+Toàn bộ các đề bài gốc được lưu giữ tập trung và sạch sẽ trong thư mục **`templates/`** ở gốc của Vault. Khi bạn học, CLI tool sẽ tự động copy file đề sang thư mục làm việc **`study/`** tương ứng để bạn code và chạy thử, giúp bạn luôn tập trung vào bài học hiện tại mà không bị rối mắt bởi quá nhiều file.
 
 ### Hướng dẫn sử dụng CLI Tool tự động (`npm run study`):
 Chúng tôi đã xây dựng một CLI script giúp tự động hóa quá trình mở bài học, làm bài tập và kiểm thử:
@@ -63,13 +63,13 @@ Chúng tôi đã xây dựng một CLI script giúp tự động hóa quá trìn
     ```bash
     npm run study next
     ```
-    *   *Lần chạy đầu tiên của bài:* Lệnh này sẽ tự động copy file mẫu `.template` thành file bài làm thực tế (ví dụ: `.ts` hoặc `.js`) nằm trong thư mục `study/` tương ứng và hiển thị đường dẫn cho bạn.
+    *   *Lần chạy đầu tiên của bài:* Lệnh này sẽ tự động copy file đề bài từ thư mục `templates/` sang thư mục làm việc `study/` tương ứng và hiển thị đường dẫn cho bạn. File bài làm sẽ có tên chuẩn sạch sẽ (ví dụ: `01. Type Annotation.ts`).
     *   *Sau khi bạn làm xong bài:* Chạy lại lệnh này để tự động chạy kiểm thử bài làm của bạn. Nếu tất cả kịch bản kiểm thử (Test Scenario) đều **PASS**, nó sẽ đánh dấu bài đó hoàn thành và tự động khởi tạo bài mới tiếp theo cho bạn!
 4.  **Kiểm thử nhanh bài làm hiện tại:**
     ```bash
     npm run study test
     ```
-    Chạy thử bài làm hiện tại để kiểm tra xem logic của bạn có chính xác không mà không chuyển bài.
+    Chạy thử bài làm hiện tại trong thư mục `study/` để kiểm tra xem logic của bạn có chính xác không mà không chuyển bài.
 
 ---
 

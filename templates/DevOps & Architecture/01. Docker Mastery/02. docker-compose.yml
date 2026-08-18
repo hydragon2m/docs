@@ -1,0 +1,5 @@
+# Bài tập 02: Docker Compose (Thiết lập cụm dịch vụ)
+# Yêu cầu: Viết file cấu hình docker-compose.yml để chạy cụm ứng dụng gồm:
+# - Một api-server (build từ local Dockerfile, map port 3000:3000)
+# - Một postgres-db (sử dụng image postgres:15-alpine, lưu volume pgdata, map port 5432:5432)
+# Hãy thực hiện viết cấu hình YAML tại đây.
