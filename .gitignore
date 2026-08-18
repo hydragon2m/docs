@@ -1,2 +1,9 @@
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+
+# Bỏ qua toàn bộ file bài tập thực tế do học viên tự làm
+**/09. Practice/**/*
+# Nhưng KHÔNG bỏ qua các file template mẫu để đẩy lên Git
+!**/09. Practice/**/*.template.*
+!**/09. Practice/**/Dockerfile.template
+!**/09. Practice/**/*.proto

@@ -46,20 +46,30 @@ Khóa học tuân thủ nghiêm ngặt nguyên lý: **"Học đi đôi với hà
 ### Cấu trúc bài tập
 Trong mỗi thư mục Module lớn đều có một thư mục **`09. Practice/`** chứa các file code bài tập TypeScript/SQL/YAML tương ứng với từng bài lý thuyết.
 
-### Cách làm bài tập thực hành:
-1.  **Cài đặt Node.js & TypeScript** trên máy cá nhân để chạy code:
+### Hướng dẫn sử dụng CLI Tool tự động (`npm run study`):
+Chúng tôi đã xây dựng một CLI script giúp tự động hóa quá trình mở bài học, làm bài tập và kiểm thử:
+
+1.  **Cài đặt các thư viện cần thiết (Chỉ cần chạy 1 lần đầu tiên):**
     ```bash
-    # Khởi tạo dependencies (nếu có package.json)
     npm install
     ```
-2.  Mở các file trong thư mục `09. Practice/` bằng IDE của bạn (như VS Code / WebStorm).
-3.  Tìm các ký tự comment `// TODO` trong code và hoàn thiện logic lập trình theo yêu cầu đề bài.
-4.  Chạy thử file code để kiểm tra kết quả:
+2.  **Xem tiến trình học tập hiện tại:**
     ```bash
-    # Sử dụng ts-node để chạy trực tiếp file TypeScript
-    npx ts-node path/to/practice/file.ts
+    npm run study
+    # hoặc: node study.js status
     ```
-5.  Sau khi hoàn thành và vượt qua toàn bộ kịch bản kiểm thử (Test Scenario) ở cuối file, bạn đã sẵn sàng bước sang bài tiếp theo!
+    Lệnh này sẽ liệt kê danh sách toàn bộ các bài học trong lộ trình và đánh dấu bài đang học hiện tại.
+3.  **Khởi tạo hoặc kiểm thử bài học hiện tại:**
+    ```bash
+    npm run study next
+    ```
+    *   *Lần chạy đầu tiên của bài:* Lệnh này sẽ tự động copy file mẫu `.template` thành file bài làm thực tế (ví dụ: `.ts` hoặc `.js`) nằm trong thư mục `09. Practice/` tương ứng và hiển thị đường dẫn cho bạn.
+    *   *Sau khi bạn làm xong bài:* Chạy lại lệnh này để tự động chạy kiểm thử bài làm của bạn. Nếu tất cả kịch bản kiểm thử (Test Scenario) đều **PASS**, nó sẽ đánh dấu bài đó hoàn thành và tự động khởi tạo bài mới tiếp theo cho bạn!
+4.  **Kiểm thử nhanh bài làm hiện tại:**
+    ```bash
+    npm run study test
+    ```
+    Chạy thử bài làm hiện tại để kiểm tra xem logic của bạn có chính xác không mà không chuyển bài.
 
 ---
 
