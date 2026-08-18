@@ -2,13 +2,13 @@
 // Yêu cầu: Thêm Type Annotation (chú thích kiểu dữ liệu) cho các biến và hàm dưới đây.
 
 // 1. Khai báo biến productName kiểu string với giá trị "Laptop"
-let productName: string = "Laptop";
+let productName;
 
 // 2. Khai báo biến quantity kiểu number với giá trị 10
-let quantity: number = 10;
+let quantity;
 
 // 3. Khai báo biến isAvailable kiểu boolean với giá trị true
-let isAvailable: boolean = true;
+let isAvailable;
 
 // 4. Khai báo hàm calculateTotal nhận vào price (number), qty (number) và trả về tổng tiền (number)
 function calculateTotal(price, qty) {
