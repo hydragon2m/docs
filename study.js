@@ -154,7 +154,7 @@ function saveProgress(progress) {
 }
 
 function getFilePath(step, isTemplate = false) {
-  const practiceDir = path.join(__dirname, 'Backend', step.module, '09. Practice', step.topic);
+  const practiceDir = path.join(__dirname, 'study', step.module, step.topic);
   
   if (step.name === '01. Dockerfile' && step.ext === 'template') {
     // Trường hợp đặc biệt của Dockerfile

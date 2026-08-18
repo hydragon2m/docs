@@ -44,7 +44,7 @@ Thư mục `Backend/` được phân chia thành các Module học tập cốt l
 Khóa học tuân thủ nghiêm ngặt nguyên lý: **"Học đi đôi với hành - Pass bài tập mới mở bài mới"**.
 
 ### Cấu trúc bài tập
-Trong mỗi thư mục Module lớn đều có một thư mục **`09. Practice/`** chứa các file code bài tập TypeScript/SQL/YAML tương ứng với từng bài lý thuyết.
+Toàn bộ bài tập thực hành được gom nhóm và tập trung trong thư mục **`study/`** nằm tại gốc của Vault, được chia thành các thư mục con tương ứng với từng module lý thuyết.
 
 ### Hướng dẫn sử dụng CLI Tool tự động (`npm run study`):
 Chúng tôi đã xây dựng một CLI script giúp tự động hóa quá trình mở bài học, làm bài tập và kiểm thử:
@@ -63,7 +63,7 @@ Chúng tôi đã xây dựng một CLI script giúp tự động hóa quá trìn
     ```bash
     npm run study next
     ```
-    *   *Lần chạy đầu tiên của bài:* Lệnh này sẽ tự động copy file mẫu `.template` thành file bài làm thực tế (ví dụ: `.ts` hoặc `.js`) nằm trong thư mục `09. Practice/` tương ứng và hiển thị đường dẫn cho bạn.
+    *   *Lần chạy đầu tiên của bài:* Lệnh này sẽ tự động copy file mẫu `.template` thành file bài làm thực tế (ví dụ: `.ts` hoặc `.js`) nằm trong thư mục `study/` tương ứng và hiển thị đường dẫn cho bạn.
     *   *Sau khi bạn làm xong bài:* Chạy lại lệnh này để tự động chạy kiểm thử bài làm của bạn. Nếu tất cả kịch bản kiểm thử (Test Scenario) đều **PASS**, nó sẽ đánh dấu bài đó hoàn thành và tự động khởi tạo bài mới tiếp theo cho bạn!
 4.  **Kiểm thử nhanh bài làm hiện tại:**
     ```bash
