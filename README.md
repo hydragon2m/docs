@@ -1,10 +1,10 @@
-# 🚀 Lộ Trình Học Backend Chuyên Sâu (TypeScript → NestJS Mastery)
+# Lộ Trình Học FullStack
 
-Chào mừng bạn đến với kho lưu trữ tài liệu và bài tập thực hành lộ trình học **Backend Masterclass**. Kho dữ liệu này được thiết kế tối ưu nhất khi đọc bằng ứng dụng **Obsidian** (hỗ trợ hiển thị sơ đồ kiến trúc Mermaid, liên kết bài học chéo, và các ghi chú cảnh báo trực quan).
+Chào mừng bạn đến với kho lưu trữ tài liệu và bài tập thực hành lộ trình học **Fullstack Masterclass**. Kho dữ liệu này được thiết kế tối ưu nhất khi đọc bằng ứng dụng **Obsidian** (hỗ trợ hiển thị sơ đồ kiến trúc Mermaid, liên kết bài học chéo, và các ghi chú cảnh báo trực quan).
 
 ---
 
-## 📥 1. Hướng dẫn Cài đặt & Mở bài học trên Obsidian
+## Hướng dẫn Cài đặt & Mở bài học trên Obsidian
 
 ### Bước 1: Tải và cài đặt Obsidian
 *   **Windows / macOS:** Truy cập trang chủ [Obsidian.md](https://obsidian.md/) để tải bản cài đặt tương ứng.
