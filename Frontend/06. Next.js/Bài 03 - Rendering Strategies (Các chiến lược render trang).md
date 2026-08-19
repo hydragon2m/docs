@@ -1,5 +1,3 @@
-# Bài 03 - Rendering Strategies (Các chiến lược render trang)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sự đa dạng của các chiến lược kết xuất giao diện

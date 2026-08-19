@@ -1,5 +1,3 @@
-# Bài 08 - Tailwind in Production (Tối ưu Tailwind cho sản phẩm thực tế)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần tối ưu hóa Tailwind CSS cho Production?

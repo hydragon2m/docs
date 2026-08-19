@@ -1,5 +1,3 @@
-# Bài 02 - useMemo & useCallback (Ghi nhớ giá trị & Hàm callback)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Vấn đề về So sánh Tham chiếu (Referential Equality) trong React

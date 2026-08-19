@@ -1,5 +1,3 @@
-# Bài 03: Box Model & Display (Mô hình hộp & Kiểu hiển thị)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 CSS Box Model là nền tảng cốt lõi định nghĩa cách mỗi phần tử HTML được trình duyệt dựng hình trên trang dưới dạng các hộp chữ nhật. Thuộc tính `display` quyết định cách thức hộp này tương tác, xếp chồng hay nằm ngang với các hộp khác trong luồng tài liệu (Document Flow).
 

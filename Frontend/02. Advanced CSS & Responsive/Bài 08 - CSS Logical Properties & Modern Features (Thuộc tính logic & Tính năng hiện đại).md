@@ -1,5 +1,3 @@
-# Bài 08 - CSS Logical Properties & Modern Features (Thuộc tính logic & Tính năng hiện đại)
-
 ## I. KHÁI QUÁT
 
 CSS đã phát triển vượt bậc trong vài năm qua. Các kỹ thuật cũ dần nhường chỗ cho các hàm toán học tích hợp (clamp), các thuộc tính logic tương thích với mọi hướng viết chữ (LTR, RTL), và các Selector cực kỳ mạnh mẽ mà trước đây ta buộc phải dùng JavaScript mới làm được (như `:has`).

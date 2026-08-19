@@ -1,5 +1,3 @@
-# Bài 04: CSS Positioning (Định vị phần tử trong CSS)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Thuộc tính `position` giúp bạn lấy một phần tử ra khỏi luồng tài liệu thông thường (Normal Flow) hoặc thay đổi vị trí tự nhiên của nó bằng cách sử dụng các tọa độ `top`, `right`, `bottom`, `left`. Cùng với `z-index`, bạn có thể kiểm soát thứ tự xếp chồng (layering) của các phần tử.
 

@@ -1,5 +1,3 @@
-# Bài 06 - CSS Architecture & Methodologies (Kiến trúc & Phương pháp luận)
-
 ## I. KHÁI QUÁT
 
 Khi một dự án web lớn lên, số lượng file CSS và các class sẽ tăng theo cấp số nhân. Nếu không có một hệ thống tổ chức rõ ràng, CSS sẽ trở thành "một mớ bòng bong" (spaghetti code):

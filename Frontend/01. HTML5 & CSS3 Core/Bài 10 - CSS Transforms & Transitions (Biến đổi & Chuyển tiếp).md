@@ -1,5 +1,3 @@
-# Bài 10: CSS Transforms & Transitions (Biến đổi & Chuyển tiếp)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Đã qua thời kỳ giao diện web chỉ như một tờ báo đứng yên. CSS Transforms cho phép thao tác toán học 2D/3D lên phần tử (dịch chuyển, phóng to, xoay, bóp méo). CSS Transitions giúp việc thay đổi trạng thái (từ A sang B, ví dụ khi hover) diễn ra mượt mà theo thời gian, thay vì giật cục chớp nhoáng.
 

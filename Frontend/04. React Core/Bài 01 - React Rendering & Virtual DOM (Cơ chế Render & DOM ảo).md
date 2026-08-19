@@ -1,5 +1,3 @@
-# Bài 01 - React Rendering & Virtual DOM (Cơ chế Render & DOM ảo)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao React sử dụng Virtual DOM?

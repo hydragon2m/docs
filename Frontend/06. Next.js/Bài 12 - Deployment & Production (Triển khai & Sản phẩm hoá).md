@@ -1,5 +1,3 @@
-# Bài 12 - Deployment & Production (Triển khai & Sản phẩm hoá)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Thử thách khi triển khai ứng dụng Next.js thực tế

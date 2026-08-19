@@ -1,5 +1,3 @@
-# Bài 08 - React 19 New Features (Tính năng mới trong React 19)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sự tiến hóa của React 19

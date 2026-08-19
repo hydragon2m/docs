@@ -1,5 +1,3 @@
-# Bài 03 - Core Components (Các thành phần cốt lõi)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao không thể sử dụng thẻ HTML trong React Native?

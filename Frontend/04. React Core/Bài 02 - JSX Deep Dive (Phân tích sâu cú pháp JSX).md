@@ -1,5 +1,3 @@
-# Bài 02 - JSX Deep Dive (Phân tích sâu cú pháp JSX)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. JSX là gì và Tại sao lại cần JSX?

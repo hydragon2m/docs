@@ -1,5 +1,3 @@
-# Bài 05 - Portals & Modal Patterns (Cổng render & Mẫu Modal)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Vấn đề của cấu trúc lồng nhau của cây DOM

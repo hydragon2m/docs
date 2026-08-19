@@ -1,5 +1,3 @@
-# Bài 09: Tables & Lists Styling (Định dạng bảng & Danh sách)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Trong quá khứ, Table (Bảng) được lạm dụng để dàn trang, nhưng ngày nay, Table được trả về đúng sứ mệnh: Hiển thị dữ liệu có cấu trúc lưới dòng-cột (Data Grid). List (Danh sách `<ul>`, `<ol>`) là thành phần thiết yếu để hiển thị thông tin dạng liệt kê, menu điều hướng. Mặc định cả hai đều khá thô cứng và cần CSS để có diện mạo hiện đại, dễ đọc dữ liệu.
 

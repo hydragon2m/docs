@@ -1,5 +1,3 @@
-# Bài 01 - Tailwind Setup & Configuration (Cài đặt & Cấu hình hệ thống)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao dùng Tailwind CSS?

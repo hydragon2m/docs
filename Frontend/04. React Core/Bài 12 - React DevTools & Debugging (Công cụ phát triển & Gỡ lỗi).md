@@ -1,5 +1,3 @@
-# Bài 12 - React DevTools & Debugging (Công cụ phát triển & Gỡ lỗi)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao việc Debug trong React lại đặc thù?

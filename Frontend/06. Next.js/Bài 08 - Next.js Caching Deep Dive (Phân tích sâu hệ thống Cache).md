@@ -1,5 +1,3 @@
-# Bài 08 - Next.js Caching Deep Dive (Phân tích sâu hệ thống Cache)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao hệ thống Cache của Next.js lại phức tạp?

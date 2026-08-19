@@ -1,5 +1,3 @@
-# Bài 10 - Context API & Dependency Injection (Chia sẻ dữ liệu & Tiêm phụ thuộc)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Vấn đề truyền Props quá sâu (Prop Drilling)

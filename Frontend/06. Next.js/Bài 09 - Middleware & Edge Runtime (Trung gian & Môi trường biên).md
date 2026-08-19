@@ -1,5 +1,3 @@
-# Bài 09 - Middleware & Edge Runtime (Trung gian & Môi trường biên)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Middleware là gì? Tại sao cần Middleware?

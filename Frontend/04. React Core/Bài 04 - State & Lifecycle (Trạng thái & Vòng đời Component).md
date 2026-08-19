@@ -1,5 +1,3 @@
-# Bài 04 - State & Lifecycle (Trạng thái & Vòng đời Component)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. State là gì? Tại sao phải cần State?

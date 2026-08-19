@@ -1,5 +1,3 @@
-# Bài 01 - Next.js Architecture & App Router (Kiến trúc & Hệ thống định tuyến)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần Next.js bên cạnh React?

@@ -1,5 +1,3 @@
-# Bài 10 - Advanced UI Patterns (Các mẫu giao diện nâng cao)
-
 ## I. KHÁI QUÁT
 
 Các hiệu ứng UI/UX hiện đại không chỉ làm đẹp cho ứng dụng web mà còn giúp định hướng người dùng, giảm cảm giác chờ đợi khi tải dữ liệu, và mang lại trải nghiệm tiệm cận với ứng dụng Native (như iOS/Android).

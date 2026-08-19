@@ -1,5 +1,3 @@
-# Bài 07 - Event Handling & Forms (Xử lý sự kiện & Biểu mẫu)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Cơ chế Xử lý Sự kiện trong React

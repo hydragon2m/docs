@@ -1,5 +1,3 @@
-# Bài 10 - React Ecosystem & Libraries (Hệ sinh thái & Thư viện phổ biến)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sức mạnh đến từ Hệ sinh thái của React

@@ -1,5 +1,3 @@
-# Bài 06: Colors, Gradients & Backgrounds (Màu sắc, Chuyển sắc & Nền)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Màu sắc và nền tạo nên cảm xúc, nhận diện thương hiệu và sự tách biệt không gian trên website. CSS không chỉ giới hạn ở việc đổ màu đặc (solid color) mà còn cung cấp khả năng kết hợp đa tầng nền (multiple backgrounds), ảnh nền, và các hiệu ứng chuyển sắc (gradient) sống động.
 

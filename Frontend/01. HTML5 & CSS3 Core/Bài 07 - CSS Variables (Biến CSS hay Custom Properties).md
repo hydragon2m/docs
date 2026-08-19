@@ -1,5 +1,3 @@
-# Bài 07: CSS Variables (Biến CSS hay Custom Properties)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 CSS Variables (hay Custom Properties) là các biến được khai báo gốc trong CSS bằng tiền tố `--`. Chức năng của chúng giống hệt các biến trong ngôn ngữ lập trình: lưu trữ giá trị (màu sắc, khoảng cách, kích thước...) để tái sử dụng ở nhiều nơi, và chỉ cần đổi một chỗ thì toàn bộ giao diện cập nhật ngay lập tức. Khác với biến SASS/LESS, biến CSS sống (live) trên trình duyệt và có thể thao tác bằng Javascript.
 

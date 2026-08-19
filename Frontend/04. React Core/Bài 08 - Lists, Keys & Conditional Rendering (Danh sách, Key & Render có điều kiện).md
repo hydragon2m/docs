@@ -1,5 +1,3 @@
-# Bài 08 - Lists, Keys & Conditional Rendering (Danh sách, Key & Render có điều kiện)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Bản chất của việc Render danh sách trong React

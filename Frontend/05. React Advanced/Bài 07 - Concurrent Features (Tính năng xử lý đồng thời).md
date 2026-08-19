@@ -1,5 +1,3 @@
-# Bài 07 - Concurrent Features (Tính năng xử lý đồng thời)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Vấn đề nghẽn luồng xử lý đơn (Single-thread Bottleneck) của React

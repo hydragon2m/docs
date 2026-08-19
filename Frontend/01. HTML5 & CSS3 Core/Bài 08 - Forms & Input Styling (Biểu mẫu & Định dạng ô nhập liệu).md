@@ -1,5 +1,3 @@
-# Bài 08: Forms & Input Styling (Biểu mẫu & Định dạng ô nhập liệu)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Biểu mẫu (Forms) là trái tim của mọi tương tác ứng dụng web (Đăng nhập, Thanh toán, Đăng ký). Tuy nhiên, các trình duyệt (Chrome, Safari, Firefox) lại cung cấp giao diện mặc định cho form rất xấu và không đồng nhất. Việc format form field, checkbox, radio button bằng CSS đòi hỏi nhiều thủ thuật vì đây là các yếu tố "nhạy cảm" với hệ điều hành (Native UI components).
 

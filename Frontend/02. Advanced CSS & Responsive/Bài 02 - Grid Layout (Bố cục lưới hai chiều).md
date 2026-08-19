@@ -1,5 +1,3 @@
-# Bài 02 - Grid Layout (Bố cục lưới hai chiều)
-
 ## I. KHÁI QUÁT
 
 CSS Grid Layout (gọi tắt là Grid) là một hệ thống bố cục hai chiều mạnh mẽ nhất hiện có trong CSS. Không giống như Flexbox xử lý bố cục một chiều tại một thời điểm (hàng hoặc cột), Grid xử lý cả cột và hàng đồng thời.

@@ -1,5 +1,3 @@
-# Bài 06 - Animation & Custom Plugins (Hoạt hình & Plugin tuỳ biến)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Vai trò của hiệu ứng chuyển động (Animation)

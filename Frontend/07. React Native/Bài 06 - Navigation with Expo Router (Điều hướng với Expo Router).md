@@ -1,5 +1,3 @@
-# Bài 06 - Navigation with Expo Router (Điều hướng với Expo Router)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao Expo Router trở thành cuộc cách mạng định tuyến trên di động?

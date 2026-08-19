@@ -1,5 +1,3 @@
-# Bài 07 - Metadata & SEO Optimization (Siêu dữ liệu & Tối ưu SEO)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao SEO là điểm mạnh tuyệt đối của Next.js?

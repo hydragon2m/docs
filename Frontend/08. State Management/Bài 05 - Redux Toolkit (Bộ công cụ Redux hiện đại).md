@@ -1,275 +1,205 @@
-# Bài 05 - Redux Toolkit (Bộ công cụ Redux hiện đại)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
-Chào mừng bạn đến với bài học chuyên sâu về **Redux Toolkit (Bộ công cụ Redux hiện đại)**. Trong hệ sinh thái phát triển Frontend và Mobile hiện đại, việc nắm vững các khái niệm cốt lõi này không chỉ giúp bạn xây dựng ứng dụng với hiệu năng cao mà còn đảm bảo khả năng mở rộng (scalability) và bảo trì (maintainability) lâu dài.
+### 1. Tại sao Redux cần Bộ công cụ Redux Toolkit (RTK)?
+Trong lịch sử phát triển React, **Redux** là thư viện quản lý state toàn cục thành công nhất. Nó cung cấp kiến trúc dòng dữ liệu một chiều cực kỳ chặt chẽ và dễ gỡ lỗi (Time-travel debugging). 
 
-### 1. Redux Toolkit (Bộ công cụ Redux hiện đại) là gì?
-**Redux Toolkit (Bộ công cụ Redux hiện đại)** đóng vai trò là một trong những thành phần quan trọng nhất trong kiến trúc tổng thể. Nó cung cấp cơ chế để xử lý luồng dữ liệu, tương tác người dùng, và tối ưu hoá việc render trên màn hình thiết bị hoặc trình duyệt.
+Tuy nhiên, Redux truyền thống (Legacy Redux) bị cộng đồng lập trình viên phàn nàn nhiều nhất vì:
+1.  **Boilerplate Code khổng lồ:** Phải viết quá nhiều file và dòng code rườm rà (file Action Types, file Actions Creator, file Reducers) chỉ để xử lý một hành động tăng số đơn giản.
+2.  **Khó cấu hình:** Việc thiết lập middleware (như Redux Thunk, Saga), tích hợp DevTools yêu cầu cấu hình thủ công phức tạp.
+3.  **Cạm bẫy Đột biến State (State Mutation):** Người dùng phải viết code copy object lồng nhau phức tạp để tránh thay đổi trực tiếp state gốc.
 
-> [!NOTE] 
-> **Lịch sử & Sự tiến hoá**  
-> Trong những năm qua, công nghệ xoay quanh Redux Toolkit (Bộ công cụ Redux hiện đại) đã có những bước tiến vượt bậc. Từ những kiến trúc Monolithic truyền thống, chúng ta đã chuyển sang các mô hình Component-based và Feature-based, giúp cho việc tái sử dụng code trở nên dễ dàng hơn bao giờ hết.
-
-### 2. Tại sao phải sử dụng Redux Toolkit (Bộ công cụ Redux hiện đại)?
-- **Hiệu năng (Performance):** Tối ưu hóa chu kỳ render và quản lý tài nguyên hiệu quả.
-- **Bảo trì (Maintainability):** Code được tổ chức rõ ràng, dễ dàng refactor.
-- **Trải nghiệm người dùng (UX):** Phản hồi nhanh chóng, mượt mà (smooth animations, transitions).
-- **Hệ sinh thái (Ecosystem):** Tích hợp hoàn hảo với các thư viện và công cụ hiện đại (React, TypeScript, Vite, v.v.).
-
+**Redux Toolkit (RTK)** ra đời là bộ công cụ chuẩn hóa chính thức của Redux. Nó loại bỏ 80% code thừa, tích hợp sẵn các middleware quan trọng, tự động tích hợp công cụ Redux DevTools và nhúng sẵn thư viện **Immer** giúp bạn viết code update state siêu ngắn gọn.
 
 ```mermaid
-sequenceDiagram
-    participant UI as React Component
-    participant Store as State/Cache Store
-    participant API as Backend API
-    UI->>Store: Request Data / Action
-    alt Cache Hit
-        Store-->>UI: Return Cached Data
-    else Cache Miss
-        Store->>API: Fetch Data
-        API-->>Store: Response
-        Store-->>UI: Return Data & Update Cache
+flowchart TD
+    Action["Dispatch Action: cart/addItem"] --> Store["configureStore (RTK Store)"]
+    Store --> Slice["Slice: cartSlice.ts (Gom nhóm action + reducer)"]
+    
+    subgraph SliceLogic["Xử lý trong Slice"]
+        Reducer["Reducer (Nhúng Immer: code push trực tiếp)"] --> NewState["Tự động sinh ra State mới bất biến"]
     end
+    
+    Slice --> SliceLogic
+    NewState --> UI["Re-render các Component lắng nghe"]
 ```
 
+---
+
+## II. CHI TIẾT KỸ THUẬT (DETAILED DEEP DIVE)
+
+### 1. Sự cải tiến vượt trội của `createSlice` và `configureStore`
+*   **`createSlice`**: Hàm trung tâm của RTK giúp bạn định nghĩa đồng thời: Giá trị khởi tạo (`initialState`), các hàm xử lý thay đổi (`reducers`) và tự động sinh ra các `actions` tương ứng trong duy nhất **một file đơn lẻ**.
+*   **`configureStore`**: Thay thế cho `createStore` cũ, tự động thiết lập Redux DevTools, tự động chèn middleware xử lý bất đồng bộ (`redux-thunk`) và kiểm tra an toàn state (nhắc nhở nếu bạn vô tình ném object không tuần tự hóa được vào store).
 
 ---
 
-## II. CHI TIẾT KỸ THUẬT (TECHNICAL DETAILS)
-
-### 1. Kiến trúc nội tại (Internal Architecture)
-Để thực sự hiểu sâu về Redux Toolkit (Bộ công cụ Redux hiện đại), chúng ta cần mổ xẻ cách nó hoạt động dưới nền tảng (under the hood). Cơ chế cốt lõi dựa trên việc theo dõi và phản ứng lại các thay đổi (reactivity).
-
-| Thành phần (Component) | Vai trò (Role) | Kỹ thuật tối ưu (Optimization) |
-| :--- | :--- | :--- |
-| **Core Engine** | Xử lý logic chính và phân phối sự kiện | Sử dụng Web Workers hoặc Background Threads |
-| **Bridge / Middleware** | Giao tiếp giữa các tầng (VD: JS Thread & Native) | Batched updates, Serialization tối ưu |
-| **Reactivity System** | Lắng nghe thay đổi trạng thái | Virtual DOM, Memoization, Dependency Tracking |
-| **Storage / Cache** | Lưu trữ tạm thời để giảm độ trễ | LRU Cache, Persistence Layer |
-
-> [!TIP]
-> **Best Practice:** Luôn chia nhỏ các logic phức tạp thành các hàm thuần (pure functions) để dễ dàng viết Unit Test và tái sử dụng.
-
-### 2. Vòng đời (Lifecycle) và Luồng thực thi (Execution Flow)
-Trong quá trình vòng đời của Redux Toolkit (Bộ công cụ Redux hiện đại), có một số giai đoạn quan trọng:
-1. **Khởi tạo (Mounting / Initialization):** Cấu hình ban đầu, cấp phát bộ nhớ.
-2. **Cập nhật (Updating / Rendering):** Lắng nghe dữ liệu thay đổi, tính toán lại giao diện.
-3. **Phân phối (Dispatching):** Gửi các action hoặc event tới các observer.
-4. **Hủy bỏ (Unmounting / Cleanup):** Giải phóng bộ nhớ, hủy các kết nối mạng và event listeners.
-
-> [!WARNING]
-> **Memory Leaks:** Việc quên thực hiện bước Cleanup (ví dụ trong `useEffect` của React) là nguyên nhân hàng đầu dẫn đến rò rỉ bộ nhớ.
+### 2. Tích hợp Immer ngầm dưới gầm
+Trong Redux truyền thống, bạn phải viết:
+```javascript
+// ❌ Rườm rà và dễ lỗi nếu thiếu dấu ...
+return {
+  ...state,
+  user: { ...state.user, age: state.user.age + 1 }
+};
+```
+Trong Redux Toolkit (nhờ Immer):
+```javascript
+// ✅ Ngắn gọn, Immer tự tạo bản sao bất biến dưới gầm
+state.user.age += 1;
+```
 
 ---
 
-## III. VÍ DỤ MINH HỌA (EXAMPLES)
+## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE EXAMPLES & ANALYSIS)
 
-Dưới đây là một số ví dụ minh họa cách triển khai Redux Toolkit (Bộ công cụ Redux hiện đại) trong dự án thực tế. Các đoạn code được viết bằng **TypeScript** và tuân thủ các tiêu chuẩn mã sạch (Clean Code).
+### 1. Triển khai Quản lý Danh sách Công việc (Todo App) bằng Redux Toolkit
+Dưới đây là cách thiết lập hoàn chỉnh một Store quản lý danh sách công việc sử dụng Redux Toolkit và TypeScript chuẩn chỉ.
 
-### Ví dụ 1: Triển khai cơ bản
-Đoạn mã dưới đây minh hoạ cách thiết lập và sử dụng Redux Toolkit (Bộ công cụ Redux hiện đại) ở mức cơ bản nhất.
-
+#### File: `/src/store/todoSlice.ts` (Định nghĩa Slice)
 ```typescript
-import React, { useState, useEffect, useCallback } from 'react';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-// Định nghĩa kiểu dữ liệu cho Payload
-interface PayloadData {
-    id: string;
-    status: 'idle' | 'loading' | 'success' | 'error';
-    data?: any;
-    errorMessage?: string;
+interface Todo {
+  id: string;
+  text: string;
+  completed: boolean;
 }
 
-/**
- * Hook tùy chỉnh quản lý Redux Toolkit (Bộ công cụ Redux hiện đại)
- */
-export const useCustomHook = (initialId: string) => {
-    const [state, setState] = useState<PayloadData>(init_state(initialId));
+interface TodoState {
+  list: Todo[];
+}
 
-    const fetchData = useCallback(async () => {
-        setState(prev => ({ ...prev, status: 'loading' }));
-        try {
-            // Giả lập gọi API hoặc Bridge
-            const response = await mockApiCall(initialId);
-            setState({ id: initialId, status: 'success', data: response });
-        } catch (error: any) {
-            setState({ id: initialId, status: 'error', errorMessage: error.message });
-        }
-    }, [initialId]);
-
-    useEffect(() => {
-        fetchData();
-        
-        return () => {
-            // Cleanup logic tại đây
-            console.log("Cleaning up resources...");
-        };
-    }, [fetchData]);
-
-    return { state, refetch: fetchData };
+const initialState: TodoState = {
+  list: []
 };
 
-// Helper function
-function init_state(id: string): PayloadData {
-    return { id, status: 'idle' };
-}
-
-async function mockApiCall(id: string): Promise<any> {
-    return new Promise((resolve) => setTimeout(() => resolve({ timestamp: Date.now() }), 1000));
-}
-```
-
-### Ví dụ 2: Tích hợp nâng cao với Error Boundary và Retry Logic
-Trong môi trường Production, việc chỉ gọi dữ liệu là chưa đủ. Bạn cần xử lý các tình huống lỗi mạng, retry, và logging.
-
-```typescript
-// Nâng cao: Wrapper xử lý lỗi và Retry
-export class TopicManager {
-    private retryCount: number = 0;
-    private readonly MAX_RETRIES = 3;
-
-    constructor(private logger: Logger) {}
-
-    async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-        try {
-            const result = await operation();
-            this.retryCount = 0; // Reset sau khi thành công
-            return result;
-        } catch (error) {
-            if (this.retryCount < this.MAX_RETRIES) {
-                this.retryCount++;
-                this.logger.warn(`Retry attempt ${this.retryCount} cho Redux Toolkit (Bộ công cụ Redux hiện đại)`);
-                // Exponential Backoff
-                await new Promise(res => setTimeout(res, 1000 * Math.pow(2, this.retryCount)));
-                return this.executeWithRetry(operation);
-            }
-            this.logger.error(`Thất bại hoàn toàn sau ${this.MAX_RETRIES} lần thử.`);
-            throw error;
-        }
+// 1. Tạo Slice gom nhóm Reducer và Actions
+const todoSlice = createSlice({
+  name: 'todos',
+  initialState,
+  reducers: {
+    // Thêm công việc mới (Immer cho phép push trực tiếp vào mảng)
+    addTodo: (state, action: PayloadAction<string>) => {
+      state.list.push({
+        id: Date.now().toString(),
+        text: action.payload,
+        completed: false
+      });
+    },
+    // Đổi trạng thái hoàn thành
+    toggleTodo: (state, action: PayloadAction<string>) => {
+      const todo = state.list.find((item) => item.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed; // Thay đổi trực tiếp thuộc tính
+      }
+    },
+    // Xóa công việc
+    deleteTodo: (state, action: PayloadAction<string>) => {
+      state.list = state.list.filter((item) => item.id !== action.payload);
     }
-}
+  }
+});
 
-interface Logger {
-    warn(msg: string): void;
-    error(msg: string): void;
-}
+// RTK tự động sinh ra các Action Creators dựa trên tên reducers đã khai báo
+export const { addTodo, toggleTodo, deleteTodo } = todoSlice.actions;
+
+export default todoSlice.reducer;
 ```
 
-> [!IMPORTANT]  
-> **Production Readiness:** Các ví dụ trên là bộ khung vững chắc cho Production. Bạn nên tích hợp thêm công cụ theo dõi như Sentry hoặc Datadog để thu thập log từ client.
+#### File: `/src/store/index.ts` (Cấu hình Store tập trung)
+```typescript
+import { configureStore } from '@reduxjs/toolkit';
+import todoReducer from './todoSlice';
+
+// 2. Cấu hình store tổng hợp
+export const store = configureStore({
+  reducer: {
+    todos: todoReducer
+  }
+});
+
+// Định nghĩa các Type phục vụ TypeScript chặt chẽ
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+```
+
+#### Sử dụng trong React Component:
+```tsx
+// File: src/components/TodoList.tsx
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../store';
+import { addTodo, toggleTodo, deleteTodo } from '../store/todoSlice';
+
+export const TodoList = () => {
+  const [text, setText] = useState('');
+  
+  // Đọc danh sách từ store
+  const todos = useSelector((state: RootState) => state.todos.list);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const handleAdd = () => {
+    if (text.trim()) {
+      dispatch(addTodo(text)); // Gửi action
+      setText('');
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-sm mx-auto bg-white rounded-xl shadow border space-y-4">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Nhập công việc..."
+          className="flex-1 px-3 py-2 border rounded"
+        />
+        <button onClick={handleAdd} className="px-4 py-2 bg-blue-500 text-white rounded">Thêm</button>
+      </div>
+
+      <ul className="space-y-2">
+        {todos.map((todo) => (
+          <li key={todo.id} className="flex justify-between items-center p-2 bg-slate-50 rounded">
+            <span 
+              onClick={() => dispatch(toggleTodo(todo.id))}
+              className={`cursor-pointer ${todo.completed ? 'line-through text-slate-400' : ''}`}
+            >
+              {todo.text}
+            </span>
+            <button 
+              onClick={() => dispatch(deleteTodo(todo.id))}
+              className="text-red-500 text-xs font-bold"
+            >
+              Xóa
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
 
 ---
 
-## IV. LƯU Ý CẠM BẪY (PITFALLS & GOTCHAS)
+## IV. LƯU Ý, CẠM BẪY VÀ QUY TẮC CỐT LÕI (PITFALLS & BEST PRACTICES)
 
-Khi làm việc với **Redux Toolkit (Bộ công cụ Redux hiện đại)**, các lập trình viên thường mắc phải một số sai lầm nghiêm trọng. Việc nhận thức được các cạm bẫy này sẽ giúp bạn tránh được những "quả bom nổ chậm" trong dự án.
-
-### 1. Over-engineering (Làm quá phức tạp)
-Nhiều kỹ sư có xu hướng áp dụng những pattern quá phức tạp vào những tính năng đơn giản. 
-- **Triệu chứng:** Sử dụng toàn bộ một thư viện khổng lồ chỉ để lưu một biến boolean (như Dark mode).
-- **Giải pháp:** Áp dụng nguyên tắc **KISS (Keep It Simple, Stupid)**. Bắt đầu với giải pháp đơn giản nhất (ví dụ: `useState` hoặc Context API) và chỉ nâng cấp (ví dụ: Zustand, Redux) khi thực sự cần thiết.
-
-### 2. Bỏ qua việc tối ưu hóa Re-renders (Wasted Renders)
-Trong môi trường React/React Native, re-renders vô ích là kẻ thù số một của hiệu năng.
-- **Triệu chứng:** Ứng dụng giật lag khi gõ text hoặc cuộn danh sách (scroll list).
-- **Giải pháp:** 
-  - Sử dụng `React.memo` cho các component nặng.
-  - Tối ưu hoá dependency array trong `useMemo` và `useCallback`.
-  - Phân tách State: Đừng đặt trạng thái toàn cục (global state) nếu nó chỉ liên quan đến một component cụ thể.
-
-### 3. Thiếu xử lý lỗi triệt để (Swallowing Errors)
-- **Triệu chứng:** Màn hình trắng xóa hoặc không có phản hồi khi có lỗi mạng xảy ra.
-- **Giải pháp:** 
-  - Bọc các tính năng trọng yếu bằng `ErrorBoundary`.
-  - Hiển thị Toast/Snackbar thân thiện cho người dùng.
-  - Ghi log lỗi đẩy về server để developer có thể theo dõi.
-
-> [!CAUTION]
-> **An ninh (Security):** Tuyệt đối không lưu trữ các thông tin nhạy cảm (Access Token dài hạn, Secret Keys) trong bộ nhớ tạm mà không được mã hóa hoặc trong AsyncStorage không bảo mật trên thiết bị di động.
+### 1. Cạm bẫy Mutate State bên ngoài môi trường Reducer của RTK
+*   **Vấn đề:** Trình biên dịch Immer chỉ hoạt động bên trong phạm vi bọc của hàm `reducers` khai báo trong `createSlice`.
+*   **Hậu quả:** Nếu bạn lấy dữ liệu ra ngoài component và cố tình thay đổi trực tiếp:
+    ```typescript
+    const todos = useSelector((state) => state.todos.list);
+    todos[0].completed = true; // ❌ LỖI CRASH: "Cannot assign to read only property"
+    ```
+    Ứng dụng sẽ báo lỗi đóng băng object.
+*   ✅ *Best practice:* Luôn thay đổi dữ liệu thông qua việc **dispatch một action** gửi về store, tuyệt đối không chỉnh sửa trực tiếp props lấy ra từ Selector.
 
 ---
 
-## V. CÂU HỎI PHỎNG VẤN THƯỜNG GẶP (FAQ & INTERVIEW QUESTIONS)
-
-Để giúp bạn củng cố kiến thức, dưới đây là một số câu hỏi phỏng vấn phổ biến xoay quanh chủ đề này:
-
-1. **Câu hỏi:** Bạn hãy giải thích cơ chế hoạt động chi tiết của Redux Toolkit (Bộ công cụ Redux hiện đại) trong kiến trúc hiện tại?
-   - **Gợi ý trả lời:** Nhấn mạnh vào luồng dữ liệu (Data flow), cách quản lý trạng thái, và cách nó tương tác với các Layer khác (API, UI, Cache). Trình bày về cơ chế Reactivity và Lifecycle.
-
-2. **Câu hỏi:** Khi nào KHÔNG NÊN sử dụng công nghệ này?
-   - **Gợi ý trả lời:** Thảo luận về Trade-offs. Nêu bật việc công nghệ nào cũng có chi phí về bundle size, learning curve. Khi dự án quá nhỏ hoặc không yêu cầu tính năng đặc thù đó, việc áp dụng sẽ là một gánh nặng.
-
-3. **Câu hỏi:** Làm thế nào để scale (mở rộng) kiến trúc này khi team tăng lên từ 5 lên 50 developer?
-   - **Gợi ý trả lời:** Áp dụng Feature-based folder structure, Domain-Driven Design (DDD) ở phía Frontend, sử dụng các công cụ kiểm soát chất lượng (ESLint, Prettier, Husky, CI/CD), và viết Unit/E2E Test đầy đủ.
-
----
-
-## TỔNG KẾT
-Việc làm chủ **Redux Toolkit (Bộ công cụ Redux hiện đại)** đòi hỏi thời gian và sự thực hành liên tục. Hãy bắt đầu bằng việc tích hợp các ví dụ trên vào một side-project, sau đó profiling hiệu năng để thấy sự khác biệt. Chúc bạn thành công!
-
-
----
-## PHỤ LỤC MỞ RỘNG 1: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Redux Toolkit (Bộ công cụ Redux hiện đại) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Redux Toolkit (Bộ công cụ Redux hiện đại) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Redux Toolkit (Bộ công cụ Redux hiện đại) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Redux Toolkit (Bộ công cụ Redux hiện đại).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
-
-
----
-## PHỤ LỤC MỞ RỘNG 2: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Redux Toolkit (Bộ công cụ Redux hiện đại) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Redux Toolkit (Bộ công cụ Redux hiện đại) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Redux Toolkit (Bộ công cụ Redux hiện đại) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Redux Toolkit (Bộ công cụ Redux hiện đại).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
+## 💡 5 QUY TẮC VÀNG VỀ REDUX TOOLKIT
+1.  **Luôn dùng `createSlice` để định nghĩa store:** Không viết các file action/reducer rời rạc theo kiểu cũ.
+2.  **Tận dụng Immer để viết code gán trực tiếp:** Giảm bớt các dòng code spread object lồng nhau phức tạp.
+3.  **Không thay đổi state bên ngoài reducers:** Luôn cập nhật thông qua luồng Dispatch Action chính quy.
+4.  **Tách biệt các State theo chức năng:** Tạo nhiều slice nhỏ độc lập (ví dụ: `authSlice.ts`, `cartSlice.ts`) và gộp lại trong `configureStore`.
+5.  **Chỉ lưu trữ dữ liệu tuần tự hóa (Serializable):** Tránh lưu trữ các hàm hoặc class instances vào Redux store để giữ an toàn cho DevTools debug.

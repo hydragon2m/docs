@@ -1,5 +1,3 @@
-# Bài 02 - Server Components vs Client Components (Thành phần Server vs Client)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Cuộc cách mạng React Server Components (RSC)

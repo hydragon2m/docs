@@ -1,5 +1,3 @@
-# Bài 11: CSS Animations & Keyframes (Hoạt hình & Khung hình chính)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Nếu `transition` giới hạn bạn ở một hành trình từ A đến B (cần một tác động như `:hover`), thì `CSS Animations` là một bộ phim điện ảnh: Nó tự động phát, có thể lặp lại vô tận, có thể tạm dừng, và có vô số điểm chạm trung gian từ A -> B -> C -> D nhờ vào khái niệm `@keyframes` (Khung hình chính).
 

@@ -1,5 +1,3 @@
-# Bài 12: Accessibility Fundamentals (Nền tảng khả năng tiếp cận A11y)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Khả năng tiếp cận (Accessibility - viết tắt A11y vì có 11 chữ cái giữa A và y) là việc xây dựng website sao cho TẤT CẢ mọi người đều có thể dùng được. "Mọi người" bao gồm: người mù sử dụng trình đọc màn hình (Screen Readers), người không thể dùng chuột chỉ dùng Bàn phím (Keyboard Navigation), người mù màu, người khiếm thính, hoặc đơn giản là người đang dùng điện thoại dưới trời nắng gắt ngoài đường.
 

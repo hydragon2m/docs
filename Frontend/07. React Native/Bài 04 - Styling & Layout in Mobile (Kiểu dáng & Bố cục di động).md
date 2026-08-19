@@ -1,5 +1,3 @@
-# Bài 04 - Styling & Layout in Mobile (Kiểu dáng & Bố cục di động)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sự khác biệt về cách Styling trên Thiết bị di động

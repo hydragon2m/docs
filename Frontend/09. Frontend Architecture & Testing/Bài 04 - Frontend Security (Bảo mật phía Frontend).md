@@ -1,270 +1,132 @@
-# Bài 04 - Frontend Security (Bảo mật phía Frontend)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
-Chào mừng bạn đến với bài học chuyên sâu về **Frontend Security (Bảo mật phía Frontend)**. Trong hệ sinh thái phát triển Frontend và Mobile hiện đại, việc nắm vững các khái niệm cốt lõi này không chỉ giúp bạn xây dựng ứng dụng với hiệu năng cao mà còn đảm bảo khả năng mở rộng (scalability) và bảo trì (maintainability) lâu dài.
+### 1. Ảo tưởng về sự an toàn phía Client
+Nhiều lập trình viên Frontend cho rằng: "Toàn bộ mã nguồn chạy trên trình duyệt của người dùng, nếu có tấn công thì chỉ ảnh hưởng tới máy của người đó". Đây là một tư duy cực kỳ sai lầm và nguy hiểm.
 
-### 1. Frontend Security (Bảo mật phía Frontend) là gì?
-**Frontend Security (Bảo mật phía Frontend)** đóng vai trò là một trong những thành phần quan trọng nhất trong kiến trúc tổng thể. Nó cung cấp cơ chế để xử lý luồng dữ liệu, tương tác người dùng, và tối ưu hoá việc render trên màn hình thiết bị hoặc trình duyệt.
+Nếu ứng dụng Frontend của bạn bị bẻ khóa hoặc xâm nhập:
+*   Kẻ tấn công có thể ăn cắp hàng nghìn Token đăng nhập của người dùng để thực hiện các hành động trái phép.
+*   Chèn mã độc quảng cáo, hoặc tự động chuyển hướng người dùng sang trang web lừa đảo (Phishing).
+*   Gửi các request độc hại phá hủy cơ sở dữ liệu Backend.
 
-> [!NOTE] 
-> **Lịch sử & Sự tiến hoá**  
-> Trong những năm qua, công nghệ xoay quanh Frontend Security (Bảo mật phía Frontend) đã có những bước tiến vượt bậc. Từ những kiến trúc Monolithic truyền thống, chúng ta đã chuyển sang các mô hình Component-based và Feature-based, giúp cho việc tái sử dụng code trở nên dễ dàng hơn bao giờ hết.
-
-### 2. Tại sao phải sử dụng Frontend Security (Bảo mật phía Frontend)?
-- **Hiệu năng (Performance):** Tối ưu hóa chu kỳ render và quản lý tài nguyên hiệu quả.
-- **Bảo trì (Maintainability):** Code được tổ chức rõ ràng, dễ dàng refactor.
-- **Trải nghiệm người dùng (UX):** Phản hồi nhanh chóng, mượt mà (smooth animations, transitions).
-- **Hệ sinh thái (Ecosystem):** Tích hợp hoàn hảo với các thư viện và công cụ hiện đại (React, TypeScript, Vite, v.v.).
-
+#### Các vector tấn công bảo mật Frontend phổ biến nhất:
+1.  **XSS (Cross-Site Scripting):** Kẻ tấn công tiêm mã độc JavaScript vào trang web và chạy trực tiếp trên trình duyệt của người dùng.
+2.  **CSRF (Cross-Site Request Forgery):** Lừa người dùng thực hiện một hành động vô ý trên trang web của họ trong khi họ vẫn đang giữ phiên đăng nhập trên trang của bạn.
 
 ```mermaid
-flowchart LR
-    A[Initialization] --> B{Check Conditions}
-    B -- Valid --> C[Execute Core Logic]
-    B -- Invalid --> D[Error Handling]
-    C --> E[Return Result / Update UI]
-    D --> E
-    E --> F[Logging & Analytics]
+flowchart TD
+    Security["Các giải pháp bảo mật Frontend"] --> XSS["Chống XSS: Khử độc đầu vào (DOMPurify), dùng CSP headers"]
+    Security --> CSRF["Chống CSRF: SameSite Cookies, Anti-CSRF Token"]
+    Security --> Secrets["Chống lộ API Keys: Biến môi trường, chặn NEXT_PUBLIC_"]
 ```
 
+---
+
+## II. CHI TIẾT KỸ THUẬT (DETAILED DEEP DIVE)
+
+### 1. Phòng chống XSS (Cross-Site Scripting)
+
+#### Vấn đề của việc hiển thị dữ liệu thô:
+Trong React, để hiển thị HTML biên dịch từ văn bản (như hiển thị nội dung bài viết định dạng rich text), bạn phải sử dụng thuộc tính `dangerouslySetInnerHTML`.
+*   *Nguy cơ:* Nếu người dùng cố tình nhập chuỗi `<script>sendTokenToAttacker(localStorage.getItem('token'))</script>` và bạn hiển thị thẳng chuỗi này lên màn hình, trình duyệt sẽ thực thi mã độc JS đó ngay lập tức.
+*   ✅ *Giải pháp:* Sử dụng thư viện **`dompurify`** để "khử độc" (sanitize) toàn bộ các thẻ HTML nguy hiểm trước khi render.
 
 ---
 
-## II. CHI TIẾT KỸ THUẬT (TECHNICAL DETAILS)
-
-### 1. Kiến trúc nội tại (Internal Architecture)
-Để thực sự hiểu sâu về Frontend Security (Bảo mật phía Frontend), chúng ta cần mổ xẻ cách nó hoạt động dưới nền tảng (under the hood). Cơ chế cốt lõi dựa trên việc theo dõi và phản ứng lại các thay đổi (reactivity).
-
-| Thành phần (Component) | Vai trò (Role) | Kỹ thuật tối ưu (Optimization) |
-| :--- | :--- | :--- |
-| **Core Engine** | Xử lý logic chính và phân phối sự kiện | Sử dụng Web Workers hoặc Background Threads |
-| **Bridge / Middleware** | Giao tiếp giữa các tầng (VD: JS Thread & Native) | Batched updates, Serialization tối ưu |
-| **Reactivity System** | Lắng nghe thay đổi trạng thái | Virtual DOM, Memoization, Dependency Tracking |
-| **Storage / Cache** | Lưu trữ tạm thời để giảm độ trễ | LRU Cache, Persistence Layer |
-
-> [!TIP]
-> **Best Practice:** Luôn chia nhỏ các logic phức tạp thành các hàm thuần (pure functions) để dễ dàng viết Unit Test và tái sử dụng.
-
-### 2. Vòng đời (Lifecycle) và Luồng thực thi (Execution Flow)
-Trong quá trình vòng đời của Frontend Security (Bảo mật phía Frontend), có một số giai đoạn quan trọng:
-1. **Khởi tạo (Mounting / Initialization):** Cấu hình ban đầu, cấp phát bộ nhớ.
-2. **Cập nhật (Updating / Rendering):** Lắng nghe dữ liệu thay đổi, tính toán lại giao diện.
-3. **Phân phối (Dispatching):** Gửi các action hoặc event tới các observer.
-4. **Hủy bỏ (Unmounting / Cleanup):** Giải phóng bộ nhớ, hủy các kết nối mạng và event listeners.
-
-> [!WARNING]
-> **Memory Leaks:** Việc quên thực hiện bước Cleanup (ví dụ trong `useEffect` của React) là nguyên nhân hàng đầu dẫn đến rò rỉ bộ nhớ.
+### 2. Phòng chống CSRF (Cross-Site Request Forgery)
+Nếu bạn lưu Access Token trong Cookie của trình duyệt:
+*   **Vector tấn công:** Người dùng đang đăng nhập trang ngân hàng `bank.com`. Họ chuyển sang đọc tin tức ở trang web lừa đảo `bad.com`. Trang `bad.com` chạy ngầm script gửi POST request chuyển tiền tới `bank.com/transfer`. Trình duyệt sẽ tự động đính kèm cookie của `bank.com` đi cùng request đó $\rightarrow$ Giao dịch được thực thi trái phép.
+*   ✅ *Giải pháp:*
+    1.  Cấu hình cookie thuộc tính **`SameSite=Strict`** hoặc **`SameSite=Lax`** để trình duyệt không tự động gửi kèm cookie khi request xuất phát từ tên miền lạ.
+    2.  Sử dụng **Anti-CSRF Tokens** (Backend sinh ra một token ngẫu nhiên, Frontend lưu trong RAM và đính kèm vào header request để backend verify chéo).
 
 ---
 
-## III. VÍ DỤ MINH HỌA (EXAMPLES)
+### 3. Thiết lập Content Security Policy (CSP)
+CSP là một Header phản hồi từ server (hoặc thẻ `<meta>`) định nghĩa danh sách các nguồn tài nguyên (JS, CSS, Image, API) an toàn được phép tải về ứng dụng.
+*   *Ý nghĩa:* Ngay cả khi kẻ tấn công tiêm được mã độc JS vào trang của bạn, trình duyệt đọc thấy URL gửi dữ liệu của kẻ tấn công không nằm trong whitelist của CSP sẽ chặn đứng hành động gửi tin nhắn đi.
 
-Dưới đây là một số ví dụ minh họa cách triển khai Frontend Security (Bảo mật phía Frontend) trong dự án thực tế. Các đoạn code được viết bằng **TypeScript** và tuân thủ các tiêu chuẩn mã sạch (Clean Code).
+---
 
-### Ví dụ 1: Triển khai cơ bản
-Đoạn mã dưới đây minh hoạ cách thiết lập và sử dụng Frontend Security (Bảo mật phía Frontend) ở mức cơ bản nhất.
+## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE EXAMPLES & ANALYSIS)
 
-```typescript
-import React, { useState, useEffect, useCallback } from 'react';
+### 1. Khử độc mã HTML an toàn bằng DOMPurify trước khi render
+Dưới đây là một component hiển thị nội dung phản hồi từ bình luận của người dùng. Hệ thống sử dụng `dompurify` ở phía client để lọc bỏ toàn bộ các thẻ script độc hại hoặc các sự kiện click giả mạo.
 
-// Định nghĩa kiểu dữ liệu cho Payload
-interface PayloadData {
-    id: string;
-    status: 'idle' | 'loading' | 'success' | 'error';
-    data?: any;
-    errorMessage?: string;
+```tsx
+// File: src/components/SafeHTMLRenderer.tsx
+import React from 'react';
+import DOMPurify from 'dompurify';
+
+interface SafeHTMLRendererProps {
+  // Chuỗi HTML chưa được lọc từ cơ sở dữ liệu (do người dùng gõ vào form)
+  dirtyHtml: string;
 }
 
-/**
- * Hook tùy chỉnh quản lý Frontend Security (Bảo mật phía Frontend)
- */
-export const useCustomHook = (initialId: string) => {
-    const [state, setState] = useState<PayloadData>(init_state(initialId));
+export const SafeHTMLRenderer: React.FC<SafeHTMLRendererProps> = ({ dirtyHtml }) => {
+  
+  // 1. Thực hiện khử độc (Sanitize) chuỗi HTML.
+  // DOMPurify sẽ lọc sạch các thẻ <script>, các thuộc tính onload, onerror, onclick nguy hiểm.
+  const cleanHtml = DOMPurify.sanitize(dirtyHtml, {
+    ALLOWED_TAGS: ['p', 'b', 'i', 'em', 'strong', 'a', 'br'], // Chỉ cho phép các thẻ định dạng chữ cơ bản
+    ALLOWED_ATTR: ['href', 'target'] // Chỉ cho phép các thuộc tính an toàn
+  });
 
-    const fetchData = useCallback(async () => {
-        setState(prev => ({ ...prev, status: 'loading' }));
-        try {
-            // Giả lập gọi API hoặc Bridge
-            const response = await mockApiCall(initialId);
-            setState({ id: initialId, status: 'success', data: response });
-        } catch (error: any) {
-            setState({ id: initialId, status: 'error', errorMessage: error.message });
-        }
-    }, [initialId]);
-
-    useEffect(() => {
-        fetchData();
-        
-        return () => {
-            // Cleanup logic tại đây
-            console.log("Cleaning up resources...");
-        };
-    }, [fetchData]);
-
-    return { state, refetch: fetchData };
+  return (
+    <div 
+      className="p-4 bg-slate-50 rounded-lg border text-sm text-slate-700 leading-relaxed"
+      // 2. Render an toàn sử dụng dangerouslySetInnerHTML
+      dangerouslySetInnerHTML={{ __html: cleanHtml }}
+    />
+  );
 };
-
-// Helper function
-function init_state(id: string): PayloadData {
-    return { id, status: 'idle' };
-}
-
-async function mockApiCall(id: string): Promise<any> {
-    return new Promise((resolve) => setTimeout(() => resolve({ timestamp: Date.now() }), 1000));
-}
 ```
 
-### Ví dụ 2: Tích hợp nâng cao với Error Boundary và Retry Logic
-Trong môi trường Production, việc chỉ gọi dữ liệu là chưa đủ. Bạn cần xử lý các tình huống lỗi mạng, retry, và logging.
+#### Ví dụ kiểm thử tính năng bảo mật:
+```tsx
+// File: src/App.tsx
+import React from 'react';
+import { SafeHTMLRenderer } from './components/SafeHTMLRenderer';
 
-```typescript
-// Nâng cao: Wrapper xử lý lỗi và Retry
-export class TopicManager {
-    private retryCount: number = 0;
-    private readonly MAX_RETRIES = 3;
+export const App = () => {
+  // Chuỗi đầu vào chứa mã độc tấn công XSS
+  const maliciousComment = `
+    Chào bạn, hãy xem sản phẩm này nhé! 
+    <script>alert('Mã độc XSS đã chạy và lấy trộm token: ' + localStorage.getItem('token'))</script>
+    <img src="invalid_image.jpg" onerror="alert('Sự kiện onerror độc hại!')" />
+    <a href="https://trust-link.com" onclick="stealData()">Bấm vào đây để nhận quà</a>
+  `;
 
-    constructor(private logger: Logger) {}
-
-    async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-        try {
-            const result = await operation();
-            this.retryCount = 0; // Reset sau khi thành công
-            return result;
-        } catch (error) {
-            if (this.retryCount < this.MAX_RETRIES) {
-                this.retryCount++;
-                this.logger.warn(`Retry attempt ${this.retryCount} cho Frontend Security (Bảo mật phía Frontend)`);
-                // Exponential Backoff
-                await new Promise(res => setTimeout(res, 1000 * Math.pow(2, this.retryCount)));
-                return this.executeWithRetry(operation);
-            }
-            this.logger.error(`Thất bại hoàn toàn sau ${this.MAX_RETRIES} lần thử.`);
-            throw error;
-        }
-    }
-}
-
-interface Logger {
-    warn(msg: string): void;
-    error(msg: string): void;
-}
+  return (
+    <div className="p-8 max-w-md mx-auto space-y-4">
+      <h3 className="font-bold text-slate-800">Hiển thị bình luận</h3>
+      
+      {/* 
+        Kết quả hiển thị: 
+        - Thẻ <script> bị xóa sạch.
+        - Thuộc tính onerror của thẻ img bị cắt bỏ.
+        - Sự kiện onclick của thẻ a bị loại trừ.
+        - Chỉ hiển thị chữ thường và link an toàn.
+      */}
+      <SafeHTMLRenderer dirtyHtml={maliciousComment} />
+    </div>
+  );
+};
 ```
 
-> [!IMPORTANT]  
-> **Production Readiness:** Các ví dụ trên là bộ khung vững chắc cho Production. Bạn nên tích hợp thêm công cụ theo dõi như Sentry hoặc Datadog để thu thập log từ client.
+---
+
+## IV. LƯU Ý, CẠM BẪY VÀ QUY TẮC CỐT LÕI (PITFALLS & BEST PRACTICES)
+
+### 1. Cạm bẫy đóng gói Private Keys vào mã nguồn Build Production
+*   **Vấn đề:** Khai báo trực tiếp các API Key nhạy cảm (như Stripe Secret Key, AWS S3 Credentials) vào trong code React.
+*   **Hậu quả:** Khi Next.js/Webpack build biên dịch code thành file bundle JS tĩnh, bất kỳ ai cũng có thể click chuột phải chọn "View Source" để đọc trọn vẹn mã nguồn và lấy cắp các chìa khóa bảo mật này.
+*   ✅ *Best practice:* Chỉ lưu các private keys ở file `.env` của máy chủ Backend hoặc trong các môi trường chạy động phía Server (như Next.js Server Components, Server Actions). Tuyệt đối không prefix bằng `NEXT_PUBLIC_` nếu không thực sự muốn lộ ra client.
 
 ---
 
-## IV. LƯU Ý CẠM BẪY (PITFALLS & GOTCHAS)
-
-Khi làm việc với **Frontend Security (Bảo mật phía Frontend)**, các lập trình viên thường mắc phải một số sai lầm nghiêm trọng. Việc nhận thức được các cạm bẫy này sẽ giúp bạn tránh được những "quả bom nổ chậm" trong dự án.
-
-### 1. Over-engineering (Làm quá phức tạp)
-Nhiều kỹ sư có xu hướng áp dụng những pattern quá phức tạp vào những tính năng đơn giản. 
-- **Triệu chứng:** Sử dụng toàn bộ một thư viện khổng lồ chỉ để lưu một biến boolean (như Dark mode).
-- **Giải pháp:** Áp dụng nguyên tắc **KISS (Keep It Simple, Stupid)**. Bắt đầu với giải pháp đơn giản nhất (ví dụ: `useState` hoặc Context API) và chỉ nâng cấp (ví dụ: Zustand, Redux) khi thực sự cần thiết.
-
-### 2. Bỏ qua việc tối ưu hóa Re-renders (Wasted Renders)
-Trong môi trường React/React Native, re-renders vô ích là kẻ thù số một của hiệu năng.
-- **Triệu chứng:** Ứng dụng giật lag khi gõ text hoặc cuộn danh sách (scroll list).
-- **Giải pháp:** 
-  - Sử dụng `React.memo` cho các component nặng.
-  - Tối ưu hoá dependency array trong `useMemo` và `useCallback`.
-  - Phân tách State: Đừng đặt trạng thái toàn cục (global state) nếu nó chỉ liên quan đến một component cụ thể.
-
-### 3. Thiếu xử lý lỗi triệt để (Swallowing Errors)
-- **Triệu chứng:** Màn hình trắng xóa hoặc không có phản hồi khi có lỗi mạng xảy ra.
-- **Giải pháp:** 
-  - Bọc các tính năng trọng yếu bằng `ErrorBoundary`.
-  - Hiển thị Toast/Snackbar thân thiện cho người dùng.
-  - Ghi log lỗi đẩy về server để developer có thể theo dõi.
-
-> [!CAUTION]
-> **An ninh (Security):** Tuyệt đối không lưu trữ các thông tin nhạy cảm (Access Token dài hạn, Secret Keys) trong bộ nhớ tạm mà không được mã hóa hoặc trong AsyncStorage không bảo mật trên thiết bị di động.
-
----
-
-## V. CÂU HỎI PHỎNG VẤN THƯỜNG GẶP (FAQ & INTERVIEW QUESTIONS)
-
-Để giúp bạn củng cố kiến thức, dưới đây là một số câu hỏi phỏng vấn phổ biến xoay quanh chủ đề này:
-
-1. **Câu hỏi:** Bạn hãy giải thích cơ chế hoạt động chi tiết của Frontend Security (Bảo mật phía Frontend) trong kiến trúc hiện tại?
-   - **Gợi ý trả lời:** Nhấn mạnh vào luồng dữ liệu (Data flow), cách quản lý trạng thái, và cách nó tương tác với các Layer khác (API, UI, Cache). Trình bày về cơ chế Reactivity và Lifecycle.
-
-2. **Câu hỏi:** Khi nào KHÔNG NÊN sử dụng công nghệ này?
-   - **Gợi ý trả lời:** Thảo luận về Trade-offs. Nêu bật việc công nghệ nào cũng có chi phí về bundle size, learning curve. Khi dự án quá nhỏ hoặc không yêu cầu tính năng đặc thù đó, việc áp dụng sẽ là một gánh nặng.
-
-3. **Câu hỏi:** Làm thế nào để scale (mở rộng) kiến trúc này khi team tăng lên từ 5 lên 50 developer?
-   - **Gợi ý trả lời:** Áp dụng Feature-based folder structure, Domain-Driven Design (DDD) ở phía Frontend, sử dụng các công cụ kiểm soát chất lượng (ESLint, Prettier, Husky, CI/CD), và viết Unit/E2E Test đầy đủ.
-
----
-
-## TỔNG KẾT
-Việc làm chủ **Frontend Security (Bảo mật phía Frontend)** đòi hỏi thời gian và sự thực hành liên tục. Hãy bắt đầu bằng việc tích hợp các ví dụ trên vào một side-project, sau đó profiling hiệu năng để thấy sự khác biệt. Chúc bạn thành công!
-
-
----
-## PHỤ LỤC MỞ RỘNG 1: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Frontend Security (Bảo mật phía Frontend) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Frontend Security (Bảo mật phía Frontend) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Frontend Security (Bảo mật phía Frontend) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Frontend Security (Bảo mật phía Frontend).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
-
-
----
-## PHỤ LỤC MỞ RỘNG 2: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Frontend Security (Bảo mật phía Frontend) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Frontend Security (Bảo mật phía Frontend) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Frontend Security (Bảo mật phía Frontend) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Frontend Security (Bảo mật phía Frontend).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
+## 💡 5 QUY TẮC VÀNG VỀ BẢO MẬT FRONTEND
+1.  **Khử độc HTML bằng DOMPurify:** Bắt buộc dùng trước khi render bất kỳ chuỗi văn bản HTML nào từ người dùng qua `dangerouslySetInnerHTML`.
+2.  **Thiết lập SameSite cho Cookie:** Phòng chống triệt để các cuộc tấn công giả mạo yêu cầu chéo CSRF.
+3.  **Khai báo CSP Header chặt chẽ:** Chỉ cho phép tải JavaScript và gửi API tới các tên miền uy tín đã được đăng ký trước.
+4.  **Tuyệt đối không lưu private keys ở Client:** Đẩy toàn bộ các tác vụ gọi API nhạy cảm cần key bí mật về phía Server Backend xử lý ngầm.
+5.  **Chạy `npm audit` định kỳ:** Phát hiện sớm các lỗ hổng bảo mật của các thư viện bên thứ ba (dependencies) trong dự án để nâng cấp kịp thời.

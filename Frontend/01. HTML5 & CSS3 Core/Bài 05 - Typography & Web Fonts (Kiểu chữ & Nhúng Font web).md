@@ -1,5 +1,3 @@
-# Bài 05: Typography & Web Fonts (Kiểu chữ & Nhúng Font web)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Typography là nghệ thuật sắp xếp chữ. Trên web, typography không chỉ là chọn font mà là trải nghiệm đọc của người dùng, liên quan đến kích cỡ, khoảng cách dòng, và độ tương phản. CSS cung cấp các thuộc tính tinh chỉnh chữ mạnh mẽ cùng với cơ chế nhúng font từ bên ngoài như Google Fonts hoặc @font-face.
 

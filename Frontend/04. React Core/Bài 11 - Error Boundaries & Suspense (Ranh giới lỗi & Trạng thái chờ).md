@@ -1,5 +1,3 @@
-# Bài 11 - Error Boundaries & Suspense (Ranh giới lỗi & Trạng thái chờ)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần Error Boundaries và Suspense?

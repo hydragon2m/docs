@@ -1,5 +1,3 @@
-# Bài 04 - Data Fetching Patterns (Các mẫu lấy dữ liệu)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sự khác biệt về Data Fetching trong Next.js

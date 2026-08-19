@@ -1,5 +1,3 @@
-# Bài 03 - Responsive & State Modifiers (Đáp ứng & Bộ điều chỉnh trạng thái)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Modifiers (Bộ điều chỉnh) trong Tailwind là gì?

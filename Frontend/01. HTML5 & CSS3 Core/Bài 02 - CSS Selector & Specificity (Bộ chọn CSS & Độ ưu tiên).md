@@ -1,5 +1,3 @@
-# Bài 02: CSS Selector & Specificity (Bộ chọn CSS & Độ ưu tiên)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 Bộ chọn (Selector) là cách CSS xác định phần tử HTML nào sẽ được áp dụng các quy tắc định dạng. Độ ưu tiên (Specificity) là thuật toán trình duyệt sử dụng để quyết định quy tắc CSS nào sẽ thắng khi có nhiều quy tắc cùng trỏ đến một phần tử.
 

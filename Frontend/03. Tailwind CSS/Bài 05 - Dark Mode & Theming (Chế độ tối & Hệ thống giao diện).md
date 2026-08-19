@@ -1,5 +1,3 @@
-# Bài 05 - Dark Mode & Theming (Chế độ tối & Hệ thống giao diện)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao Chế độ tối (Dark Mode) trở thành tiêu chuẩn?

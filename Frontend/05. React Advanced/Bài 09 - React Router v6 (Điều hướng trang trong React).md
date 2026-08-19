@@ -1,5 +1,3 @@
-# Bài 09 - React Router v6 (Điều hướng trang trong React)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần thư viện định tuyến trong Single Page Application (SPA)?

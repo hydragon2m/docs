@@ -1,5 +1,3 @@
-# Bài 05 - useEffect & Side Effects (Hiệu ứng phụ & Đồng bộ hóa)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Side Effect là gì?

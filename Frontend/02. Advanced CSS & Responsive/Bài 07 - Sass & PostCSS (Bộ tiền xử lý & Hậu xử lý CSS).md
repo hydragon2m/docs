@@ -1,5 +1,3 @@
-# Bài 07 - Sass & PostCSS (Bộ tiền xử lý & Hậu xử lý CSS)
-
 ## I. KHÁI QUÁT
 
 CSS thuần túy (Vanilla CSS) rất tuyệt, nhưng khi dự án lớn, nó bộc lộ giới hạn: không có hàm, không có vòng lặp, thiếu khả năng chia nhỏ file hiệu quả. Để khắc phục, công cụ CSS được chia thành 2 loại mạnh mẽ:

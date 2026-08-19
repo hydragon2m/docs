@@ -1,5 +1,3 @@
-# Bài 04 - Code Splitting & Lazy Loading (Tách mã & Tải chậm)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao phải tách mã (Code Splitting)?

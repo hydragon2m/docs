@@ -1,270 +1,111 @@
-# Bài 07 - E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
-Chào mừng bạn đến với bài học chuyên sâu về **E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)**. Trong hệ sinh thái phát triển Frontend và Mobile hiện đại, việc nắm vững các khái niệm cốt lõi này không chỉ giúp bạn xây dựng ứng dụng với hiệu năng cao mà còn đảm bảo khả năng mở rộng (scalability) và bảo trì (maintainability) lâu dài.
+### 1. E2E Testing là gì? Tại sao cần E2E Testing?
+Trong khi Unit/Integration Testing chạy trong môi trường giả lập (Node.js/JSDOM) và cô lập từng module, **E2E Testing (End-to-End Testing - Kiểm thử từ đầu đến cuối)** thực hiện một quy trình kiểm thử toàn diện nhất:
+1.  Tự động mở trình duyệt thực tế (Chromium, Firefox, WebKit).
+2.  Truy cập vào ứng dụng đang chạy ở môi trường thực tế (Localhost hoặc Staging).
+3.  Thực hiện trọn vẹn một luồng hành vi của khách hàng (ví dụ: đăng nhập $\rightarrow$ xem sản phẩm $\rightarrow$ thêm vào giỏ $\rightarrow$ thanh toán $\rightarrow$ nhận email thông báo).
+4.  Giao tiếp thực tế với Cơ sở dữ liệu và các hệ thống bên thứ ba.
 
-### 1. E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) là gì?
-**E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)** đóng vai trò là một trong những thành phần quan trọng nhất trong kiến trúc tổng thể. Nó cung cấp cơ chế để xử lý luồng dữ liệu, tương tác người dùng, và tối ưu hoá việc render trên màn hình thiết bị hoặc trình duyệt.
-
-> [!NOTE] 
-> **Lịch sử & Sự tiến hoá**  
-> Trong những năm qua, công nghệ xoay quanh E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) đã có những bước tiến vượt bậc. Từ những kiến trúc Monolithic truyền thống, chúng ta đã chuyển sang các mô hình Component-based và Feature-based, giúp cho việc tái sử dụng code trở nên dễ dàng hơn bao giờ hết.
-
-### 2. Tại sao phải sử dụng E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)?
-- **Hiệu năng (Performance):** Tối ưu hóa chu kỳ render và quản lý tài nguyên hiệu quả.
-- **Bảo trì (Maintainability):** Code được tổ chức rõ ràng, dễ dàng refactor.
-- **Trải nghiệm người dùng (UX):** Phản hồi nhanh chóng, mượt mà (smooth animations, transitions).
-- **Hệ sinh thái (Ecosystem):** Tích hợp hoàn hảo với các thư viện và công cụ hiện đại (React, TypeScript, Vite, v.v.).
-
+**Playwright** (do Microsoft phát triển) hiện là công cụ kiểm thử E2E mạnh mẽ và hiện đại nhất, hỗ trợ chạy test đa trình duyệt song song cực nhanh, tự động chờ đợi phần tử xuất hiện (Auto-waiting) và cung cấp các công cụ ghi hình (Trace Viewer) giúp gỡ lỗi trực quan.
 
 ```mermaid
-flowchart LR
-    A[Initialization] --> B{Check Conditions}
-    B -- Valid --> C[Execute Core Logic]
-    B -- Invalid --> D[Error Handling]
-    C --> E[Return Result / Update UI]
-    D --> E
-    E --> F[Logging & Analytics]
+flowchart TD
+    Playwright["Playwright Test Suite"] -->|Điều khiển qua Driver API| Browser["Mở Trình duyệt thực tế (Chrome/Safari)"]
+    
+    Browser -->|1. Truy cập| Web["Trang Web: localhost:3000"]
+    Web -->|2. Điền form| Input["Nhập thông tin thanh toán"]
+    Input -->|3. Click| DB[(Giao dịch ghi nhận Database thật)]
+    
+    DB -->|4. Phản hồi thành công| Assert["Playwright kiểm tra dòng chữ: Cảm ơn bạn!"]
 ```
 
+---
+
+## II. CHI TIẾT KỸ THUẬT (DETAILED DEEP DIVE)
+
+### 1. Cơ chế Tự động Chờ (Auto-waiting) của Playwright
+Một trong những lỗi gây khó chịu nhất khi viết E2E test bằng các thư viện cũ (như Selenium) là việc các phần tử giao diện hiển thị chậm do mạng hoặc animation. Bạn thường phải viết code `sleep(2000)` thủ công để chờ đợi.
+*   **Playwright giải quyết triệt để:** Trước khi thực hiện bất kỳ hành động nào (như `click()` hay `fill()`), Playwright sẽ tự động thực hiện một chuỗi kiểm tra ngầm (Actionability checks):
+    *   Phần tử đã xuất hiện trong DOM chưa?
+    *   Phần tử có hiển thị không (không bị ẩn)?
+    *   Phần tử có bị khóa (disabled) không?
+    *   Phần tử có bị che bởi phần tử khác không?
+*   Chỉ khi mọi điều kiện thỏa mãn, Playwright mới thực thi hành động, giúp loại bỏ 99% lỗi test ảo (flaky tests).
 
 ---
 
-## II. CHI TIẾT KỸ THUẬT (TECHNICAL DETAILS)
+## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE EXAMPLES & ANALYSIS)
 
-### 1. Kiến trúc nội tại (Internal Architecture)
-Để thực sự hiểu sâu về E2E Testing với Playwright (Kiểm thử từ đầu đến cuối), chúng ta cần mổ xẻ cách nó hoạt động dưới nền tảng (under the hood). Cơ chế cốt lõi dựa trên việc theo dõi và phản ứng lại các thay đổi (reactivity).
-
-| Thành phần (Component) | Vai trò (Role) | Kỹ thuật tối ưu (Optimization) |
-| :--- | :--- | :--- |
-| **Core Engine** | Xử lý logic chính và phân phối sự kiện | Sử dụng Web Workers hoặc Background Threads |
-| **Bridge / Middleware** | Giao tiếp giữa các tầng (VD: JS Thread & Native) | Batched updates, Serialization tối ưu |
-| **Reactivity System** | Lắng nghe thay đổi trạng thái | Virtual DOM, Memoization, Dependency Tracking |
-| **Storage / Cache** | Lưu trữ tạm thời để giảm độ trễ | LRU Cache, Persistence Layer |
-
-> [!TIP]
-> **Best Practice:** Luôn chia nhỏ các logic phức tạp thành các hàm thuần (pure functions) để dễ dàng viết Unit Test và tái sử dụng.
-
-### 2. Vòng đời (Lifecycle) và Luồng thực thi (Execution Flow)
-Trong quá trình vòng đời của E2E Testing với Playwright (Kiểm thử từ đầu đến cuối), có một số giai đoạn quan trọng:
-1. **Khởi tạo (Mounting / Initialization):** Cấu hình ban đầu, cấp phát bộ nhớ.
-2. **Cập nhật (Updating / Rendering):** Lắng nghe dữ liệu thay đổi, tính toán lại giao diện.
-3. **Phân phối (Dispatching):** Gửi các action hoặc event tới các observer.
-4. **Hủy bỏ (Unmounting / Cleanup):** Giải phóng bộ nhớ, hủy các kết nối mạng và event listeners.
-
-> [!WARNING]
-> **Memory Leaks:** Việc quên thực hiện bước Cleanup (ví dụ trong `useEffect` của React) là nguyên nhân hàng đầu dẫn đến rò rỉ bộ nhớ.
-
----
-
-## III. VÍ DỤ MINH HỌA (EXAMPLES)
-
-Dưới đây là một số ví dụ minh họa cách triển khai E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) trong dự án thực tế. Các đoạn code được viết bằng **TypeScript** và tuân thủ các tiêu chuẩn mã sạch (Clean Code).
-
-### Ví dụ 1: Triển khai cơ bản
-Đoạn mã dưới đây minh hoạ cách thiết lập và sử dụng E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) ở mức cơ bản nhất.
+### 1. Viết E2E Test hoàn chỉnh cho Luồng Đăng nhập & Đổi mật khẩu
+Dưới đây là một file test Playwright thực tế kiểm thử luồng đăng nhập của người dùng. Test suite sẽ tự động điền form, kiểm tra chuyển hướng URL thành công và verify cookie được ghi nhận.
 
 ```typescript
-import React, { useState, useEffect, useCallback } from 'react';
+// File: e2e/auth.spec.ts
+import { test, expect } from '@playwright/test';
 
-// Định nghĩa kiểu dữ liệu cho Payload
-interface PayloadData {
-    id: string;
-    status: 'idle' | 'loading' | 'success' | 'error';
-    data?: any;
-    errorMessage?: string;
-}
+test.describe('Luồng Xác thực Người dùng (Auth Flow)', () => {
+  
+  // Chạy trước mỗi test case: truy cập vào trang chủ
+  test.beforeEach(async ({ page }) => {
+    await page.goto('http://localhost:3000/login');
+  });
 
-/**
- * Hook tùy chỉnh quản lý E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)
- */
-export const useCustomHook = (initialId: string) => {
-    const [state, setState] = useState<PayloadData>(init_state(initialId));
+  test('phải báo lỗi nếu đăng nhập sai mật khẩu', async ({ page }) => {
+    // 1. Tìm ô nhập email bằng placeholder và điền chữ
+    await page.getByPlaceholder('Nhập email...').fill('wronguser@example.com');
 
-    const fetchData = useCallback(async () => {
-        setState(prev => ({ ...prev, status: 'loading' }));
-        try {
-            // Giả lập gọi API hoặc Bridge
-            const response = await mockApiCall(initialId);
-            setState({ id: initialId, status: 'success', data: response });
-        } catch (error: any) {
-            setState({ id: initialId, status: 'error', errorMessage: error.message });
-        }
-    }, [initialId]);
+    // 2. Tìm ô nhập mật khẩu bằng label
+    await page.getByLabel('Mật khẩu').fill('wrongpassword');
 
-    useEffect(() => {
-        fetchData();
-        
-        return () => {
-            // Cleanup logic tại đây
-            console.log("Cleaning up resources...");
-        };
-    }, [fetchData]);
+    // 3. Click nút Đăng nhập
+    await page.getByRole('button', { name: /Đăng nhập/i }).click();
 
-    return { state, refetch: fetchData };
-};
+    // 4. Kiểm tra thông báo lỗi hiển thị trên màn hình
+    const errorMessage = page.getByRole('alert');
+    await expect(errorMessage).toBeVisible();
+    await expect(errorMessage).toHaveTextContent('Tài khoản hoặc mật khẩu không chính xác.');
+  });
 
-// Helper function
-function init_state(id: string): PayloadData {
-    return { id, status: 'idle' };
-}
+  test('phải đăng nhập thành công và chuyển hướng về Dashboard', async ({ page }) => {
+    await page.getByPlaceholder('Nhập email...').fill('admin@example.com');
+    await page.getByLabel('Mật khẩu').fill('securepassword123');
+    await page.getByRole('button', { name: /Đăng nhập/i }).click();
 
-async function mockApiCall(id: string): Promise<any> {
-    return new Promise((resolve) => setTimeout(() => resolve({ timestamp: Date.now() }), 1000));
-}
+    // 5. Kiểm tra URL chuyển đổi thành công sang trang quản trị
+    await expect(page).toHaveURL('http://localhost:3000/dashboard');
+
+    // 6. Kiểm tra xem tiêu đề chào mừng có hiển thị đúng không
+    const welcomeTitle = page.getByRole('heading', { name: /Chào mừng, Admin/i });
+    await expect(welcomeTitle).toBeVisible();
+
+    // 7. Kiểm tra trạng thái lưu trữ LocalStorage/Cookie
+    const token = await page.evaluate(() => localStorage.getItem('access_token'));
+    expect(token).toBe('mock_jwt_token_value');
+  });
+
+});
 ```
 
-### Ví dụ 2: Tích hợp nâng cao với Error Boundary và Retry Logic
-Trong môi trường Production, việc chỉ gọi dữ liệu là chưa đủ. Bạn cần xử lý các tình huống lỗi mạng, retry, và logging.
-
-```typescript
-// Nâng cao: Wrapper xử lý lỗi và Retry
-export class TopicManager {
-    private retryCount: number = 0;
-    private readonly MAX_RETRIES = 3;
-
-    constructor(private logger: Logger) {}
-
-    async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-        try {
-            const result = await operation();
-            this.retryCount = 0; // Reset sau khi thành công
-            return result;
-        } catch (error) {
-            if (this.retryCount < this.MAX_RETRIES) {
-                this.retryCount++;
-                this.logger.warn(`Retry attempt ${this.retryCount} cho E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)`);
-                // Exponential Backoff
-                await new Promise(res => setTimeout(res, 1000 * Math.pow(2, this.retryCount)));
-                return this.executeWithRetry(operation);
-            }
-            this.logger.error(`Thất bại hoàn toàn sau ${this.MAX_RETRIES} lần thử.`);
-            throw error;
-        }
-    }
-}
-
-interface Logger {
-    warn(msg: string): void;
-    error(msg: string): void;
-}
+#### Chạy test lệnh qua Terminal:
+```bash
+npx playwright test
 ```
 
-> [!IMPORTANT]  
-> **Production Readiness:** Các ví dụ trên là bộ khung vững chắc cho Production. Bạn nên tích hợp thêm công cụ theo dõi như Sentry hoặc Datadog để thu thập log từ client.
+---
+
+## IV. LƯU Ý, CẠM BẪY VÀ QUY TẮC CỐT LÕI (PITFALLS & BEST PRACTICES)
+
+### 1. Cạm bẫy phụ thuộc vào Trạng thái Dữ liệu cũ (Database Leak)
+*   **Vấn đề:** Bạn viết test tạo tài khoản mới với username `account_01`. Lần đầu chạy test thành công. Lần thứ hai chạy test bị lỗi fail vì username đã tồn tại trong database.
+*   **Hậu quả:** Suite test không thể chạy lặp lại một cách độc lập (Isolated).
+*   ✅ *Best practice:* Thiết lập cơ chế dọn dẹp Database (Reset DB) trước hoặc sau mỗi lượt chạy test case, hoặc sử dụng các tài khoản có tên ngẫu nhiên được sinh ra động (ví dụ sử dụng `Date.now()`).
 
 ---
 
-## IV. LƯU Ý CẠM BẪY (PITFALLS & GOTCHAS)
-
-Khi làm việc với **E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)**, các lập trình viên thường mắc phải một số sai lầm nghiêm trọng. Việc nhận thức được các cạm bẫy này sẽ giúp bạn tránh được những "quả bom nổ chậm" trong dự án.
-
-### 1. Over-engineering (Làm quá phức tạp)
-Nhiều kỹ sư có xu hướng áp dụng những pattern quá phức tạp vào những tính năng đơn giản. 
-- **Triệu chứng:** Sử dụng toàn bộ một thư viện khổng lồ chỉ để lưu một biến boolean (như Dark mode).
-- **Giải pháp:** Áp dụng nguyên tắc **KISS (Keep It Simple, Stupid)**. Bắt đầu với giải pháp đơn giản nhất (ví dụ: `useState` hoặc Context API) và chỉ nâng cấp (ví dụ: Zustand, Redux) khi thực sự cần thiết.
-
-### 2. Bỏ qua việc tối ưu hóa Re-renders (Wasted Renders)
-Trong môi trường React/React Native, re-renders vô ích là kẻ thù số một của hiệu năng.
-- **Triệu chứng:** Ứng dụng giật lag khi gõ text hoặc cuộn danh sách (scroll list).
-- **Giải pháp:** 
-  - Sử dụng `React.memo` cho các component nặng.
-  - Tối ưu hoá dependency array trong `useMemo` và `useCallback`.
-  - Phân tách State: Đừng đặt trạng thái toàn cục (global state) nếu nó chỉ liên quan đến một component cụ thể.
-
-### 3. Thiếu xử lý lỗi triệt để (Swallowing Errors)
-- **Triệu chứng:** Màn hình trắng xóa hoặc không có phản hồi khi có lỗi mạng xảy ra.
-- **Giải pháp:** 
-  - Bọc các tính năng trọng yếu bằng `ErrorBoundary`.
-  - Hiển thị Toast/Snackbar thân thiện cho người dùng.
-  - Ghi log lỗi đẩy về server để developer có thể theo dõi.
-
-> [!CAUTION]
-> **An ninh (Security):** Tuyệt đối không lưu trữ các thông tin nhạy cảm (Access Token dài hạn, Secret Keys) trong bộ nhớ tạm mà không được mã hóa hoặc trong AsyncStorage không bảo mật trên thiết bị di động.
-
----
-
-## V. CÂU HỎI PHỎNG VẤN THƯỜNG GẶP (FAQ & INTERVIEW QUESTIONS)
-
-Để giúp bạn củng cố kiến thức, dưới đây là một số câu hỏi phỏng vấn phổ biến xoay quanh chủ đề này:
-
-1. **Câu hỏi:** Bạn hãy giải thích cơ chế hoạt động chi tiết của E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) trong kiến trúc hiện tại?
-   - **Gợi ý trả lời:** Nhấn mạnh vào luồng dữ liệu (Data flow), cách quản lý trạng thái, và cách nó tương tác với các Layer khác (API, UI, Cache). Trình bày về cơ chế Reactivity và Lifecycle.
-
-2. **Câu hỏi:** Khi nào KHÔNG NÊN sử dụng công nghệ này?
-   - **Gợi ý trả lời:** Thảo luận về Trade-offs. Nêu bật việc công nghệ nào cũng có chi phí về bundle size, learning curve. Khi dự án quá nhỏ hoặc không yêu cầu tính năng đặc thù đó, việc áp dụng sẽ là một gánh nặng.
-
-3. **Câu hỏi:** Làm thế nào để scale (mở rộng) kiến trúc này khi team tăng lên từ 5 lên 50 developer?
-   - **Gợi ý trả lời:** Áp dụng Feature-based folder structure, Domain-Driven Design (DDD) ở phía Frontend, sử dụng các công cụ kiểm soát chất lượng (ESLint, Prettier, Husky, CI/CD), và viết Unit/E2E Test đầy đủ.
-
----
-
-## TỔNG KẾT
-Việc làm chủ **E2E Testing với Playwright (Kiểm thử từ đầu đến cuối)** đòi hỏi thời gian và sự thực hành liên tục. Hãy bắt đầu bằng việc tích hợp các ví dụ trên vào một side-project, sau đó profiling hiệu năng để thấy sự khác biệt. Chúc bạn thành công!
-
-
----
-## PHỤ LỤC MỞ RỘNG 1: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán E2E Testing với Playwright (Kiểm thử từ đầu đến cuối).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
-
-
----
-## PHỤ LỤC MỞ RỘNG 2: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển E2E Testing với Playwright (Kiểm thử từ đầu đến cuối) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán E2E Testing với Playwright (Kiểm thử từ đầu đến cuối).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
+## 💡 5 QUY TẮC VÀNG VỀ E2E TESTING
+1.  **Chạy test đa trình duyệt song song:** Tận dụng tính năng chạy song song mặc định của Playwright trên Chromium, Firefox, WebKit để phát hiện lỗi hiển thị chéo.
+2.  **Dùng Locators hướng tiếp cận (A11y Locators):** Định vị phần tử bằng `getByRole`, `getByLabel` thay vì dùng các CSS class dễ thay đổi.
+3.  **Tận dụng Trace Viewer để debug lỗi:** Bật tính năng ghi hình trace khi chạy trên CI/CD để xem lại từng ảnh chụp màn hình, lịch sử console và network của request bị lỗi.
+4.  **Tự động dọn dẹp Database:** Đảm bảo dữ liệu test luôn sạch sẽ và các test case hoàn toàn độc lập, có thể chạy lặp lại vô hạn lần.
+5.  **Dùng UI Mode để viết test trực quan:** Chạy lệnh `npx playwright test --ui` để mở trình duyệt điều khiển tương tác trực quan, giúp viết test nhanh và dễ dàng.

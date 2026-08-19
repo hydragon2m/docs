@@ -1,5 +1,3 @@
-# Bài 03 - React.memo & Performance (Tối ưu hiệu năng render)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao React Component re-render?

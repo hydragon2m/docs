@@ -1,5 +1,3 @@
-# Bài 07 - Native APIs & Device Features (API Native & Tính năng thiết bị)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Bản chất của việc tương tác phần cứng Thiết bị

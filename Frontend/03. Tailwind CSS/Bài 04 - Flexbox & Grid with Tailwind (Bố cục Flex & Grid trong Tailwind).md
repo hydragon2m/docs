@@ -1,5 +1,3 @@
-# Bài 04 - Flexbox & Grid with Tailwind (Bố cục Flex & Grid trong Tailwind)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Dựng Layout hiện đại không cần viết Custom CSS

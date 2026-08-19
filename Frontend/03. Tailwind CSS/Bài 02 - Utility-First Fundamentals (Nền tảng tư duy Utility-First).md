@@ -1,5 +1,3 @@
-# Bài 02 - Utility-First Fundamentals (Nền tảng tư duy Utility-First)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Triết lý Utility-First (Tiện ích trước tiên) là gì?

@@ -1,5 +1,3 @@
-# Bài 05 - FlatList & Virtualized Lists (Danh sách ảo hoá hiệu năng cao)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao không được sử dụng map() hoặc ScrollView cho danh sách dài?

@@ -1,5 +1,3 @@
-# Bài 03 - Components & Props (Thành phần & Thuộc tính truyền vào)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Component và Props là gì?

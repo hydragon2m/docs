@@ -1,5 +1,3 @@
-# Bài 09 - CSS Performance & Critical Rendering Path (Hiệu năng CSS)
-
 ## I. KHÁI QUÁT
 
 CSS có ảnh hưởng cực lớn đến thời gian tải trang và độ mượt mà của các hoạt ảnh (animation). Các quyết định viết CSS sai lầm có thể khiến trang web bị "chặn hiển thị" (render-blocking), làm rớt khung hình (jank) khi scroll, hoặc tiêu tốn quá nhiều pin trên thiết bị di động.

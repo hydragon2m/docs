@@ -1,5 +1,3 @@
-# Bài 05 - Responsive Images & Media (Hình ảnh & Media đáp ứng)
-
 ## I. KHÁI QUÁT
 
 Việc hiển thị văn bản đáp ứng thì tương đối dễ, nhưng hình ảnh và media (video, iframe) lại là một thách thức lớn trong Responsive Web Design (RWD). 

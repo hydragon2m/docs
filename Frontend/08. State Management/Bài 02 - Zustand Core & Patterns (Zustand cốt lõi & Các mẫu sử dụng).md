@@ -1,275 +1,180 @@
-# Bài 02 - Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
-Chào mừng bạn đến với bài học chuyên sâu về **Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)**. Trong hệ sinh thái phát triển Frontend và Mobile hiện đại, việc nắm vững các khái niệm cốt lõi này không chỉ giúp bạn xây dựng ứng dụng với hiệu năng cao mà còn đảm bảo khả năng mở rộng (scalability) và bảo trì (maintainability) lâu dài.
-
-### 1. Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) là gì?
-**Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)** đóng vai trò là một trong những thành phần quan trọng nhất trong kiến trúc tổng thể. Nó cung cấp cơ chế để xử lý luồng dữ liệu, tương tác người dùng, và tối ưu hoá việc render trên màn hình thiết bị hoặc trình duyệt.
-
-> [!NOTE] 
-> **Lịch sử & Sự tiến hoá**  
-> Trong những năm qua, công nghệ xoay quanh Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) đã có những bước tiến vượt bậc. Từ những kiến trúc Monolithic truyền thống, chúng ta đã chuyển sang các mô hình Component-based và Feature-based, giúp cho việc tái sử dụng code trở nên dễ dàng hơn bao giờ hết.
-
-### 2. Tại sao phải sử dụng Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)?
-- **Hiệu năng (Performance):** Tối ưu hóa chu kỳ render và quản lý tài nguyên hiệu quả.
-- **Bảo trì (Maintainability):** Code được tổ chức rõ ràng, dễ dàng refactor.
-- **Trải nghiệm người dùng (UX):** Phản hồi nhanh chóng, mượt mà (smooth animations, transitions).
-- **Hệ sinh thái (Ecosystem):** Tích hợp hoàn hảo với các thư viện và công cụ hiện đại (React, TypeScript, Vite, v.v.).
-
+### 1. Triết lý thiết kế của Zustand
+Trong tiếng Đức, **Zustand** có nghĩa là "trạng thái". Đây là một thư viện quản lý state toàn cục siêu nhẹ (dung lượng chỉ khoảng **1.5 KB** sau khi nén), hoạt động dựa trên triết lý **tự do và tối giản**:
+*   **Không cần Provider bọc ngoài:** Bạn có thể gọi đọc/ghi dữ liệu từ store ở bất kỳ đâu mà không cần bọc toàn bộ ứng dụng trong một thẻ `<Provider>` giống như Redux hay Context API.
+*   **Không dùng React Hook dưới gầm:** Zustand hoạt động độc lập ở tầng JavaScript thuần túy, cho phép bạn đọc và thay đổi state ngay cả bên ngoài phạm vi của các React Component (ví dụ: đọc token đăng nhập từ store trực tiếp trong file cấu hình Axios Interceptors).
+*   **Cơ chế Atomic Selectors:** Các component tự đăng ký chính xác thuộc tính cần dùng $\rightarrow$ Tối ưu hóa hiệu năng re-render tuyệt đối.
 
 ```mermaid
-sequenceDiagram
-    participant UI as React Component
-    participant Store as State/Cache Store
-    participant API as Backend API
-    UI->>Store: Request Data / Action
-    alt Cache Hit
-        Store-->>UI: Return Cached Data
-    else Cache Miss
-        Store->>API: Fetch Data
-        API-->>Store: Response
-        Store-->>UI: Return Data & Update Cache
-    end
+flowchart LR
+    Store["Zustand Store<br/>(Lưu trữ dữ liệu)"] -->|Đăng ký lắng nghe chọn lọc| ComponentA["Component A<br/>(Lắng nghe state.count)"]
+    Store -->|Đọc/ghi ngoài cây React| UtilityJS["File Axios Interceptors.ts<br/>(Đọc state.token)"]
+    
+    ComponentB["Component B"] -->|Gọi action| Store
 ```
-
 
 ---
 
-## II. CHI TIẾT KỸ THUẬT (TECHNICAL DETAILS)
+## II. CHI TIẾT KỸ THUẬT (DETAILED DEEP DIVE)
 
-### 1. Kiến trúc nội tại (Internal Architecture)
-Để thực sự hiểu sâu về Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng), chúng ta cần mổ xẻ cách nó hoạt động dưới nền tảng (under the hood). Cơ chế cốt lõi dựa trên việc theo dõi và phản ứng lại các thay đổi (reactivity).
-
-| Thành phần (Component) | Vai trò (Role) | Kỹ thuật tối ưu (Optimization) |
-| :--- | :--- | :--- |
-| **Core Engine** | Xử lý logic chính và phân phối sự kiện | Sử dụng Web Workers hoặc Background Threads |
-| **Bridge / Middleware** | Giao tiếp giữa các tầng (VD: JS Thread & Native) | Batched updates, Serialization tối ưu |
-| **Reactivity System** | Lắng nghe thay đổi trạng thái | Virtual DOM, Memoization, Dependency Tracking |
-| **Storage / Cache** | Lưu trữ tạm thời để giảm độ trễ | LRU Cache, Persistence Layer |
-
-> [!TIP]
-> **Best Practice:** Luôn chia nhỏ các logic phức tạp thành các hàm thuần (pure functions) để dễ dàng viết Unit Test và tái sử dụng.
-
-### 2. Vòng đời (Lifecycle) và Luồng thực thi (Execution Flow)
-Trong quá trình vòng đời của Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng), có một số giai đoạn quan trọng:
-1. **Khởi tạo (Mounting / Initialization):** Cấu hình ban đầu, cấp phát bộ nhớ.
-2. **Cập nhật (Updating / Rendering):** Lắng nghe dữ liệu thay đổi, tính toán lại giao diện.
-3. **Phân phối (Dispatching):** Gửi các action hoặc event tới các observer.
-4. **Hủy bỏ (Unmounting / Cleanup):** Giải phóng bộ nhớ, hủy các kết nối mạng và event listeners.
-
-> [!WARNING]
-> **Memory Leaks:** Việc quên thực hiện bước Cleanup (ví dụ trong `useEffect` của React) là nguyên nhân hàng đầu dẫn đến rò rỉ bộ nhớ.
+### 1. Cách thức hoạt động của Atomic Selectors và So sánh Nông (Shallow)
+Khi bạn gọi hook của Zustand, bạn truyền vào một hàm lọc (**selector**):
+```typescript
+const count = useCounterStore((state) => state.count);
+```
+Zustand sử dụng cơ chế so sánh nông (**Shallow Comparison**) để kiểm tra xem giá trị được lọc ra có thay đổi so với lần render trước hay không.
+*   *Lưu ý:* Nếu selector của bạn trả về một **đối tượng mới** hoặc mảng mới ở mỗi lần chạy:
+    ```typescript
+    // ⚠️ LỖI: Selector trả về object mới, gây re-render liên tục cho component!
+    const { name, age } = useUserStore((state) => ({ name: state.name, age: state.age }));
+    ```
+    Hãy chuyển sang sử dụng hàm so sánh nông **`shallow`** được cung cấp bởi Zustand để ép buộc so sánh giá trị bên trong object thay vì so sánh địa chỉ vùng nhớ:
+    ```typescript
+    import { useStore } from 'zustand';
+    import { useShallow } from 'zustand/react/shallow';
+    
+    const { name, age } = useUserStore(useShallow((state) => ({ name: state.name, age: state.age })));
+    ```
 
 ---
 
-## III. VÍ DỤ MINH HỌA (EXAMPLES)
+### 2. Các Middleware tích hợp sẵn mạnh mẽ
+Zustand hỗ trợ mở rộng tính năng thông qua cơ chế bọc các Middleware:
+1.  **`persist`**: Tự động lưu trữ và đồng bộ hóa toàn bộ hoặc một phần dữ liệu của store xuống bộ nhớ máy (`localStorage` trên Web hoặc `AsyncStorage`/`MMKV` trên Mobile).
+2.  **`immer`**: Cho phép bạn viết code thay đổi state theo kiểu đột biến (mutating code) giống như viết JS thuần, Immer sẽ tự động chuyển đổi nó thành state bất biến (immutable) dưới gầm.
+3.  **`devtools`**: Tích hợp trực tiếp với công cụ Redux DevTools trên trình duyệt để bạn theo dõi lịch sử thay đổi của store (Time-travel debugging).
 
-Dưới đây là một số ví dụ minh họa cách triển khai Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) trong dự án thực tế. Các đoạn code được viết bằng **TypeScript** và tuân thủ các tiêu chuẩn mã sạch (Clean Code).
+---
 
-### Ví dụ 1: Triển khai cơ bản
-Đoạn mã dưới đây minh hoạ cách thiết lập và sử dụng Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) ở mức cơ bản nhất.
+## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE EXAMPLES & ANALYSIS)
 
-```typescript
-import React, { useState, useEffect, useCallback } from 'react';
+### 1. Triển khai Giỏ hàng lưu trữ tự động (Persistent Cart Store) tích hợp Immer
+Dưới đây là một ví dụ thực tế hoàn chỉnh dựng store Giỏ hàng (Cart) hỗ trợ thêm/xóa sản phẩm, tự động tính toán tổng số lượng, tự động lưu thông tin giỏ hàng vào `localStorage` và viết code mutate mượt mà bằng Immer.
 
-// Định nghĩa kiểu dữ liệu cho Payload
-interface PayloadData {
-    id: string;
-    status: 'idle' | 'loading' | 'success' | 'error';
-    data?: any;
-    errorMessage?: string;
+```tsx
+// File: src/store/useCartStore.ts
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
+
+interface CartItem {
+  id: string;
+  name: string;
+  quantity: number;
 }
 
-/**
- * Hook tùy chỉnh quản lý Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)
- */
-export const useCustomHook = (initialId: string) => {
-    const [state, setState] = useState<PayloadData>(init_state(initialId));
-
-    const fetchData = useCallback(async () => {
-        setState(prev => ({ ...prev, status: 'loading' }));
-        try {
-            // Giả lập gọi API hoặc Bridge
-            const response = await mockApiCall(initialId);
-            setState({ id: initialId, status: 'success', data: response });
-        } catch (error: any) {
-            setState({ id: initialId, status: 'error', errorMessage: error.message });
-        }
-    }, [initialId]);
-
-    useEffect(() => {
-        fetchData();
-        
-        return () => {
-            // Cleanup logic tại đây
-            console.log("Cleaning up resources...");
-        };
-    }, [fetchData]);
-
-    return { state, refetch: fetchData };
-};
-
-// Helper function
-function init_state(id: string): PayloadData {
-    return { id, status: 'idle' };
+interface CartState {
+  items: CartItem[];
+  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  removeItem: (id: string) => void;
+  clearCart: () => void;
+  // Getters (Tính toán phái sinh)
+  getTotalItems: () => number;
 }
 
-async function mockApiCall(id: string): Promise<any> {
-    return new Promise((resolve) => setTimeout(() => resolve({ timestamp: Date.now() }), 1000));
-}
-```
+// Kết hợp cả Middleware persist và immer
+export const useCartStore = create<CartState>()(
+  persist(
+    immer((set, get) => ({
+      items: [],
 
-### Ví dụ 2: Tích hợp nâng cao với Error Boundary và Retry Logic
-Trong môi trường Production, việc chỉ gọi dữ liệu là chưa đủ. Bạn cần xử lý các tình huống lỗi mạng, retry, và logging.
+      // 1. Thêm sản phẩm (Viết code dạng mutate trực tiếp nhờ Immer)
+      addItem: (newItem) =>
+        set((state) => {
+          const existingItem = state.items.find((i) => i.id === newItem.id);
+          if (existingItem) {
+            existingItem.quantity += 1; // Sửa trực tiếp thuộc tính, không cần spread array
+          } else {
+            state.items.push({ ...newItem, quantity: 1 });
+          }
+        }),
 
-```typescript
-// Nâng cao: Wrapper xử lý lỗi và Retry
-export class TopicManager {
-    private retryCount: number = 0;
-    private readonly MAX_RETRIES = 3;
+      // 2. Xóa sản phẩm
+      removeItem: (id) =>
+        set((state) => {
+          state.items = state.items.filter((i) => i.id !== id);
+        }),
 
-    constructor(private logger: Logger) {}
+      clearCart: () =>
+        set((state) => {
+          state.items = [];
+        }),
 
-    async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-        try {
-            const result = await operation();
-            this.retryCount = 0; // Reset sau khi thành công
-            return result;
-        } catch (error) {
-            if (this.retryCount < this.MAX_RETRIES) {
-                this.retryCount++;
-                this.logger.warn(`Retry attempt ${this.retryCount} cho Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)`);
-                // Exponential Backoff
-                await new Promise(res => setTimeout(res, 1000 * Math.pow(2, this.retryCount)));
-                return this.executeWithRetry(operation);
-            }
-            this.logger.error(`Thất bại hoàn toàn sau ${this.MAX_RETRIES} lần thử.`);
-            throw error;
-        }
+      // 3. Sử dụng get() để truy cập các giá trị hiện tại trong store
+      getTotalItems: () => {
+        return get().items.reduce((total, item) => total + item.quantity, 0);
+      }
+    })),
+    {
+      name: 'shopping-cart-storage', // Tên khóa lưu trong localStorage
+      storage: createJSONStorage(() => localStorage) // Sử dụng localStorage
     }
-}
-
-interface Logger {
-    warn(msg: string): void;
-    error(msg: string): void;
-}
+  )
+);
 ```
 
-> [!IMPORTANT]  
-> **Production Readiness:** Các ví dụ trên là bộ khung vững chắc cho Production. Bạn nên tích hợp thêm công cụ theo dõi như Sentry hoặc Datadog để thu thập log từ client.
+#### Sử dụng store trong Component React:
+```tsx
+// File: src/components/CartWidget.tsx
+import React from 'react';
+import { useCartStore } from '../store/useCartStore';
+
+export const CartWidget = () => {
+  // Chỉ render lại component này khi độ dài mảng items thay đổi
+  const totalItems = useCartStore((state) => state.getTotalItems());
+  const clearCart = useCartStore((state) => state.clearCart);
+
+  return (
+    <div className="p-4 bg-slate-100 rounded-lg flex items-center justify-between">
+      <span className="font-bold text-slate-700">Giỏ hàng: {totalItems} sản phẩm</span>
+      <button 
+        onClick={clearCart}
+        className="px-3 py-1 bg-red-500 text-white rounded text-sm font-semibold hover:bg-red-600"
+      >
+        Xóa sạch
+      </button>
+    </div>
+  );
+};
+```
 
 ---
 
-## IV. LƯU Ý CẠM BẪY (PITFALLS & GOTCHAS)
+## IV. LƯU Ý, CẠM BẪY VÀ QUY TẮC CỐT LÕI (PITFALLS & BEST PRACTICES)
 
-Khi làm việc với **Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)**, các lập trình viên thường mắc phải một số sai lầm nghiêm trọng. Việc nhận thức được các cạm bẫy này sẽ giúp bạn tránh được những "quả bom nổ chậm" trong dự án.
+### 1. Đọc và Ghi dữ liệu Store bên ngoài React Component (Non-React Context)
+*   **Vấn đề:** Đôi khi bạn cần thay đổi hoặc đọc dữ liệu từ store ở các file helper JS thuần (nhập token vào header Axios khi gọi API).
+*   ✅ *Best practice:* Sử dụng trực tiếp các hàm API của store:
+    *   **`useCartStore.getState()`**: Đọc trạng thái hiện tại (đồng bộ).
+    *   **`useCartStore.setState()`**: Ghi/cập nhật trực tiếp dữ liệu.
+    *   **`useCartStore.subscribe()`**: Lắng nghe sự thay đổi của store từ bên ngoài.
 
-### 1. Over-engineering (Làm quá phức tạp)
-Nhiều kỹ sư có xu hướng áp dụng những pattern quá phức tạp vào những tính năng đơn giản. 
-- **Triệu chứng:** Sử dụng toàn bộ một thư viện khổng lồ chỉ để lưu một biến boolean (như Dark mode).
-- **Giải pháp:** Áp dụng nguyên tắc **KISS (Keep It Simple, Stupid)**. Bắt đầu với giải pháp đơn giản nhất (ví dụ: `useState` hoặc Context API) và chỉ nâng cấp (ví dụ: Zustand, Redux) khi thực sự cần thiết.
+```typescript
+// File: src/api/client.ts
+import axios from 'axios';
+import { useAuthStore } from '../store/useAuthStore';
 
-### 2. Bỏ qua việc tối ưu hóa Re-renders (Wasted Renders)
-Trong môi trường React/React Native, re-renders vô ích là kẻ thù số một của hiệu năng.
-- **Triệu chứng:** Ứng dụng giật lag khi gõ text hoặc cuộn danh sách (scroll list).
-- **Giải pháp:** 
-  - Sử dụng `React.memo` cho các component nặng.
-  - Tối ưu hoá dependency array trong `useMemo` và `useCallback`.
-  - Phân tách State: Đừng đặt trạng thái toàn cục (global state) nếu nó chỉ liên quan đến một component cụ thể.
+export const apiClient = axios.create({
+  baseURL: 'https://api.example.com'
+});
 
-### 3. Thiếu xử lý lỗi triệt để (Swallowing Errors)
-- **Triệu chứng:** Màn hình trắng xóa hoặc không có phản hồi khi có lỗi mạng xảy ra.
-- **Giải pháp:** 
-  - Bọc các tính năng trọng yếu bằng `ErrorBoundary`.
-  - Hiển thị Toast/Snackbar thân thiện cho người dùng.
-  - Ghi log lỗi đẩy về server để developer có thể theo dõi.
-
-> [!CAUTION]
-> **An ninh (Security):** Tuyệt đối không lưu trữ các thông tin nhạy cảm (Access Token dài hạn, Secret Keys) trong bộ nhớ tạm mà không được mã hóa hoặc trong AsyncStorage không bảo mật trên thiết bị di động.
-
----
-
-## V. CÂU HỎI PHỎNG VẤN THƯỜNG GẶP (FAQ & INTERVIEW QUESTIONS)
-
-Để giúp bạn củng cố kiến thức, dưới đây là một số câu hỏi phỏng vấn phổ biến xoay quanh chủ đề này:
-
-1. **Câu hỏi:** Bạn hãy giải thích cơ chế hoạt động chi tiết của Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) trong kiến trúc hiện tại?
-   - **Gợi ý trả lời:** Nhấn mạnh vào luồng dữ liệu (Data flow), cách quản lý trạng thái, và cách nó tương tác với các Layer khác (API, UI, Cache). Trình bày về cơ chế Reactivity và Lifecycle.
-
-2. **Câu hỏi:** Khi nào KHÔNG NÊN sử dụng công nghệ này?
-   - **Gợi ý trả lời:** Thảo luận về Trade-offs. Nêu bật việc công nghệ nào cũng có chi phí về bundle size, learning curve. Khi dự án quá nhỏ hoặc không yêu cầu tính năng đặc thù đó, việc áp dụng sẽ là một gánh nặng.
-
-3. **Câu hỏi:** Làm thế nào để scale (mở rộng) kiến trúc này khi team tăng lên từ 5 lên 50 developer?
-   - **Gợi ý trả lời:** Áp dụng Feature-based folder structure, Domain-Driven Design (DDD) ở phía Frontend, sử dụng các công cụ kiểm soát chất lượng (ESLint, Prettier, Husky, CI/CD), và viết Unit/E2E Test đầy đủ.
+// Chèn token vào header request
+apiClient.interceptors.request.use((config) => {
+  // Đọc trực tiếp từ store Zustand không cần react hook!
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+```
 
 ---
 
-## TỔNG KẾT
-Việc làm chủ **Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng)** đòi hỏi thời gian và sự thực hành liên tục. Hãy bắt đầu bằng việc tích hợp các ví dụ trên vào một side-project, sau đó profiling hiệu năng để thấy sự khác biệt. Chúc bạn thành công!
-
-
----
-## PHỤ LỤC MỞ RỘNG 1: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
-
-
----
-## PHỤ LỤC MỞ RỘNG 2: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Zustand Core & Patterns (Zustand cốt lõi & Các mẫu sử dụng).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
+## 💡 5 QUY TẮC VÀNG VỀ ZUSTAND
+1.  **Dùng selector đơn lẻ:** Lọc chính xác giá trị cần hiển thị để ngăn chặn re-render dây chuyền vô ích.
+2.  **Sử dụng `useShallow` khi lấy nhiều giá trị:** Ép buộc so sánh nông các thuộc tính bên trong object.
+3.  **Tách biệt Actions ra khỏi State dữ liệu:** Thiết kế các hàm action rõ ràng và gom nhóm để dễ quản lý.
+4.  **Tận dụng immer để viết code mutate:** Giảm thiểu sự phức tạp của cú pháp spread objects (`...state`) lồng nhau.
+5.  **Dùng `getState()` bên ngoài React:** Tương tác linh hoạt với store ở mọi tầng hệ thống từ helper, API client đến Router Guards.

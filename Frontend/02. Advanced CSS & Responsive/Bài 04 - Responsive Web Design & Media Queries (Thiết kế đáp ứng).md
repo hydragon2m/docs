@@ -1,5 +1,3 @@
-# Bài 04 - Responsive Web Design & Media Queries (Thiết kế đáp ứng)
-
 ## I. KHÁI QUÁT
 
 Responsive Web Design (RWD - Thiết kế web đáp ứng) là phương pháp thiết kế và phát triển web sao cho giao diện và nội dung tự động điều chỉnh, hiển thị đẹp mắt và thân thiện trên mọi thiết bị, từ màn hình điện thoại di động nhỏ bé, máy tính bảng, đến màn hình desktop lớn.

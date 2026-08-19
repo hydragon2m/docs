@@ -1,5 +1,3 @@
-# Bài 01 - React Native Architecture & Bridge (Kiến trúc & Cầu nối Native)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Bản chất của React Native

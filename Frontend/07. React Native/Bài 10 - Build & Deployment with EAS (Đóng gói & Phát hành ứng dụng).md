@@ -1,5 +1,3 @@
-# Bài 10 - Build & Deployment with EAS (Đóng gói & Phát hành ứng dụng)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Thách thức lớn khi phát hành ứng dụng di động lên Store

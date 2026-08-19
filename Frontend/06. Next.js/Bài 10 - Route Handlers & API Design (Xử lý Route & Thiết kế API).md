@@ -1,5 +1,3 @@
-# Bài 10 - Route Handlers & API Design (Xử lý Route & Thiết kế API)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao Next.js cần Route Handlers?

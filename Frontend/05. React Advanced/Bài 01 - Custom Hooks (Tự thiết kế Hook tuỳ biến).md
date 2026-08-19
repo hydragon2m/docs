@@ -1,5 +1,3 @@
-# Bài 01 - Custom Hooks (Tự thiết kế Hook tuỳ biến)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần Custom Hooks?

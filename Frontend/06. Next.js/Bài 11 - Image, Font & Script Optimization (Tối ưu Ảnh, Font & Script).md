@@ -1,5 +1,3 @@
-# Bài 11 - Image, Font & Script Optimization (Tối ưu Ảnh, Font & Script)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Thách thức về Hiệu năng tải trang (Web Performance)

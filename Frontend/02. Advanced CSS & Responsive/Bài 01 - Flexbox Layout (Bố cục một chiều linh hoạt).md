@@ -1,5 +1,3 @@
-# Bài 01 - Flexbox Layout (Bố cục một chiều linh hoạt)
-
 ## I. KHÁI QUÁT
 
 Flexbox (Flexible Box Layout) là một mô hình bố cục trong CSS3, được thiết kế để cung cấp một cách hiệu quả hơn để bố cục, căn chỉnh và phân phối không gian giữa các mục trong một container, ngay cả khi kích thước của chúng không xác định hoặc có tính động (do đó có từ "flex"). 

@@ -1,270 +1,170 @@
-# Bài 03 - API Layer & HTTP Client (Tầng API & Client HTTP)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
-Chào mừng bạn đến với bài học chuyên sâu về **API Layer & HTTP Client (Tầng API & Client HTTP)**. Trong hệ sinh thái phát triển Frontend và Mobile hiện đại, việc nắm vững các khái niệm cốt lõi này không chỉ giúp bạn xây dựng ứng dụng với hiệu năng cao mà còn đảm bảo khả năng mở rộng (scalability) và bảo trì (maintainability) lâu dài.
+### 1. Tại sao cần tách biệt Tầng API (API Layer)?
+Trong các dự án nhỏ, lập trình viên thường gọi trực tiếp hàm `fetch()` ở khắp nơi trong ứng dụng: trong component, trong actions, trong custom hooks.
+#### Điểm yếu chí mạng của cách làm này:
+*   **Trùng lặp cấu hình:** Bạn phải viết lặp đi lặp lại base URL (`https://api.example.com`), các headers như `Content-Type` hay token `Authorization` ở hàng trăm chỗ.
+*   **Khó bảo trì:** Khi backend đổi cấu trúc API (ví dụ đổi `/api/v1/auth/login` thành `/api/v2/login`), bạn phải đi rà soát và sửa lỗi ở toàn bộ mã nguồn.
+*   **Không có cơ chế xử lý lỗi tập trung:** Việc bắt lỗi mất mạng, token hết hạn (401) phải viết thủ công ở từng component.
 
-### 1. API Layer & HTTP Client (Tầng API & Client HTTP) là gì?
-**API Layer & HTTP Client (Tầng API & Client HTTP)** đóng vai trò là một trong những thành phần quan trọng nhất trong kiến trúc tổng thể. Nó cung cấp cơ chế để xử lý luồng dữ liệu, tương tác người dùng, và tối ưu hoá việc render trên màn hình thiết bị hoặc trình duyệt.
-
-> [!NOTE] 
-> **Lịch sử & Sự tiến hoá**  
-> Trong những năm qua, công nghệ xoay quanh API Layer & HTTP Client (Tầng API & Client HTTP) đã có những bước tiến vượt bậc. Từ những kiến trúc Monolithic truyền thống, chúng ta đã chuyển sang các mô hình Component-based và Feature-based, giúp cho việc tái sử dụng code trở nên dễ dàng hơn bao giờ hết.
-
-### 2. Tại sao phải sử dụng API Layer & HTTP Client (Tầng API & Client HTTP)?
-- **Hiệu năng (Performance):** Tối ưu hóa chu kỳ render và quản lý tài nguyên hiệu quả.
-- **Bảo trì (Maintainability):** Code được tổ chức rõ ràng, dễ dàng refactor.
-- **Trải nghiệm người dùng (UX):** Phản hồi nhanh chóng, mượt mà (smooth animations, transitions).
-- **Hệ sinh thái (Ecosystem):** Tích hợp hoàn hảo với các thư viện và công cụ hiện đại (React, TypeScript, Vite, v.v.).
-
+**API Layer** là một tầng trừu tượng nằm giữa ứng dụng của bạn và API Server, sử dụng một thư viện HTTP Client chuyên nghiệp (như **Axios**) được cấu hình tập trung để quản lý toàn bộ các request, tự động xử lý token hết hạn và định dạng lỗi thống nhất.
 
 ```mermaid
 flowchart LR
-    A[Initialization] --> B{Check Conditions}
-    B -- Valid --> C[Execute Core Logic]
-    B -- Invalid --> D[Error Handling]
-    C --> E[Return Result / Update UI]
-    D --> E
-    E --> F[Logging & Analytics]
+    Component["React Component"] -->|Gọi hàm api.getProfile()| APILayer["Tầng API (src/features/auth/api)"]
+    
+    APILayer -->|Thông qua Client cấu hình sẵn| Axios["Axios Instance (Cấu hình Base URL, Interceptors)"]
+    Axios -->|Request mạng| Server["Backend API Server"]
+    
+    Server -->|Response lỗi 401| Axios
+    Axios -->|Tự động gọi refresh token ngầm| Server
 ```
 
+---
+
+## II. CHI TIẾT KỸ THUẬT (DETAILED DEEP DIVE)
+
+### 1. Cơ chế hoạt động của Axios Interceptors
+Axios cung cấp tính năng **Interceptors** (Bộ lọc trung gian) cho phép bạn can thiệp và xử lý request/response trước khi chúng được đẩy đi hoặc trả về ứng dụng:
+
+1.  **Request Interceptor:** Tự động đọc token đăng nhập hiện tại từ bộ nhớ và chèn vào header `Authorization: Bearer <token>` cho mọi request đi ra ngoài.
+2.  **Response Interceptor:** Lắng nghe kết quả trả về. Nếu phát hiện lỗi **`401 Unauthorized`** (Access Token hết hạn), nó sẽ tạm thời giữ các request lỗi lại (queue), gửi request ngầm xin token mới (Silent Refresh), và tự động gửi lại các request lỗi với token mới một cách mượt mà.
 
 ---
 
-## II. CHI TIẾT KỸ THUẬT (TECHNICAL DETAILS)
+## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE EXAMPLES & ANALYSIS)
 
-### 1. Kiến trúc nội tại (Internal Architecture)
-Để thực sự hiểu sâu về API Layer & HTTP Client (Tầng API & Client HTTP), chúng ta cần mổ xẻ cách nó hoạt động dưới nền tảng (under the hood). Cơ chế cốt lõi dựa trên việc theo dõi và phản ứng lại các thay đổi (reactivity).
-
-| Thành phần (Component) | Vai trò (Role) | Kỹ thuật tối ưu (Optimization) |
-| :--- | :--- | :--- |
-| **Core Engine** | Xử lý logic chính và phân phối sự kiện | Sử dụng Web Workers hoặc Background Threads |
-| **Bridge / Middleware** | Giao tiếp giữa các tầng (VD: JS Thread & Native) | Batched updates, Serialization tối ưu |
-| **Reactivity System** | Lắng nghe thay đổi trạng thái | Virtual DOM, Memoization, Dependency Tracking |
-| **Storage / Cache** | Lưu trữ tạm thời để giảm độ trễ | LRU Cache, Persistence Layer |
-
-> [!TIP]
-> **Best Practice:** Luôn chia nhỏ các logic phức tạp thành các hàm thuần (pure functions) để dễ dàng viết Unit Test và tái sử dụng.
-
-### 2. Vòng đời (Lifecycle) và Luồng thực thi (Execution Flow)
-Trong quá trình vòng đời của API Layer & HTTP Client (Tầng API & Client HTTP), có một số giai đoạn quan trọng:
-1. **Khởi tạo (Mounting / Initialization):** Cấu hình ban đầu, cấp phát bộ nhớ.
-2. **Cập nhật (Updating / Rendering):** Lắng nghe dữ liệu thay đổi, tính toán lại giao diện.
-3. **Phân phối (Dispatching):** Gửi các action hoặc event tới các observer.
-4. **Hủy bỏ (Unmounting / Cleanup):** Giải phóng bộ nhớ, hủy các kết nối mạng và event listeners.
-
-> [!WARNING]
-> **Memory Leaks:** Việc quên thực hiện bước Cleanup (ví dụ trong `useEffect` của React) là nguyên nhân hàng đầu dẫn đến rò rỉ bộ nhớ.
-
----
-
-## III. VÍ DỤ MINH HỌA (EXAMPLES)
-
-Dưới đây là một số ví dụ minh họa cách triển khai API Layer & HTTP Client (Tầng API & Client HTTP) trong dự án thực tế. Các đoạn code được viết bằng **TypeScript** và tuân thủ các tiêu chuẩn mã sạch (Clean Code).
-
-### Ví dụ 1: Triển khai cơ bản
-Đoạn mã dưới đây minh hoạ cách thiết lập và sử dụng API Layer & HTTP Client (Tầng API & Client HTTP) ở mức cơ bản nhất.
+### 1. Cấu hình Axios Instance & Auto-refresh Token hoàn chỉnh
+Dưới đây là mã nguồn thực tế cấu hình một HTTP Client chuyên nghiệp bằng Axios, tích hợp sẵn tự động làm mới token khi Access Token hết hạn và tự động ánh xạ lỗi thân thiện cho người dùng.
 
 ```typescript
-import React, { useState, useEffect, useCallback } from 'react';
+// File: src/api/apiClient.ts
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// Định nghĩa kiểu dữ liệu cho Payload
-interface PayloadData {
-    id: string;
-    status: 'idle' | 'loading' | 'success' | 'error';
-    data?: any;
-    errorMessage?: string;
+// Định nghĩa kiểu dữ liệu cho lỗi trả về từ Backend
+interface APIErrorResponse {
+  message: string;
+  code?: string;
 }
 
-/**
- * Hook tùy chỉnh quản lý API Layer & HTTP Client (Tầng API & Client HTTP)
- */
-export const useCustomHook = (initialId: string) => {
-    const [state, setState] = useState<PayloadData>(init_state(initialId));
+// 1. Tạo Instance Axios với cấu hình mặc định
+export const apiClient = axios.create({
+  baseURL: 'https://api.example.com/v1',
+  timeout: 10000, // Hạn chế treo mạng quá 10 giây
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
 
-    const fetchData = useCallback(async () => {
-        setState(prev => ({ ...prev, status: 'loading' }));
-        try {
-            // Giả lập gọi API hoặc Bridge
-            const response = await mockApiCall(initialId);
-            setState({ id: initialId, status: 'success', data: response });
-        } catch (error: any) {
-            setState({ id: initialId, status: 'error', errorMessage: error.message });
-        }
-    }, [initialId]);
+// 2. Request Interceptor: Tự động chèn JWT Token
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('access_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    useEffect(() => {
-        fetchData();
-        
-        return () => {
-            // Cleanup logic tại đây
-            console.log("Cleaning up resources...");
-        };
-    }, [fetchData]);
+// Biến cờ theo dõi tiến trình refresh token để tránh spam API
+let isRefreshing = false;
+let failedQueue: any[] = [];
 
-    return { state, refetch: fetchData };
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (token) {
+      prom.resolve(token);
+    } else {
+      prom.reject(error);
+    }
+  });
+  failedQueue = [];
 };
 
-// Helper function
-function init_state(id: string): PayloadData {
-    return { id, status: 'idle' };
-}
+// 3. Response Interceptor: Xử lý Lỗi và Tự động làm mới Token khi gặp lỗi 401
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError<APIErrorResponse>) => {
+    const originalRequest = error.config;
+    
+    if (!originalRequest) return Promise.reject(error);
 
-async function mockApiCall(id: string): Promise<any> {
-    return new Promise((resolve) => setTimeout(() => resolve({ timestamp: Date.now() }), 1000));
-}
-```
-
-### Ví dụ 2: Tích hợp nâng cao với Error Boundary và Retry Logic
-Trong môi trường Production, việc chỉ gọi dữ liệu là chưa đủ. Bạn cần xử lý các tình huống lỗi mạng, retry, và logging.
-
-```typescript
-// Nâng cao: Wrapper xử lý lỗi và Retry
-export class TopicManager {
-    private retryCount: number = 0;
-    private readonly MAX_RETRIES = 3;
-
-    constructor(private logger: Logger) {}
-
-    async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-        try {
-            const result = await operation();
-            this.retryCount = 0; // Reset sau khi thành công
-            return result;
-        } catch (error) {
-            if (this.retryCount < this.MAX_RETRIES) {
-                this.retryCount++;
-                this.logger.warn(`Retry attempt ${this.retryCount} cho API Layer & HTTP Client (Tầng API & Client HTTP)`);
-                // Exponential Backoff
-                await new Promise(res => setTimeout(res, 1000 * Math.pow(2, this.retryCount)));
-                return this.executeWithRetry(operation);
+    // Phát hiện lỗi 401 và request này chưa từng được retry trước đây
+    if (error.response?.status === 401 && !(originalRequest as any)._retry) {
+      if (isRefreshing) {
+        // Nếu đang trong tiến trình xin token mới, xếp request này vào hàng đợi chờ
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
             }
-            this.logger.error(`Thất bại hoàn toàn sau ${this.MAX_RETRIES} lần thử.`);
-            throw error;
-        }
-    }
-}
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
 
-interface Logger {
-    warn(msg: string): void;
-    error(msg: string): void;
-}
+      (originalRequest as any)._retry = true;
+      isRefreshing = true;
+
+      try {
+        console.log('Access token hết hạn. Đang xin làm mới token ngầm...');
+        
+        // Gọi API refresh token ngầm
+        const response = await axios.post('https://api.example.com/v1/auth/refresh', {
+          refreshToken: localStorage.getItem('refresh_token')
+        });
+
+        const { accessToken, newRefreshToken } = response.data;
+        
+        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('refresh_token', newRefreshToken);
+
+        isRefreshing = false;
+        processQueue(null, accessToken);
+
+        // Gửi lại request bị lỗi ban đầu với token mới
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        }
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Nếu refresh token cũng hết hạn, ép buộc logout người dùng
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        console.warn('Phiên làm việc hết hạn. Yêu cầu đăng nhập lại.');
+        localStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Tự động định dạng lại tin nhắn lỗi thân thiện với người dùng
+    const userFriendlyMessage = error.response?.data?.message || 'Đã xảy ra lỗi kết nối mạng.';
+    error.message = userFriendlyMessage;
+
+    return Promise.reject(error);
+  }
+);
 ```
 
-> [!IMPORTANT]  
-> **Production Readiness:** Các ví dụ trên là bộ khung vững chắc cho Production. Bạn nên tích hợp thêm công cụ theo dõi như Sentry hoặc Datadog để thu thập log từ client.
+---
+
+## IV. LƯU Ý, CẠM BẪY VÀ QUY TẮC CỐT LÕI (PITFALLS & BEST PRACTICES)
+
+### 1. Cạm bẫy tạo vòng lặp vô tận khi gọi refresh token lỗi
+*   **Vấn đề:** Nếu API `/auth/refresh` của bạn cũng trả về lỗi `401 Unauthorized` và bạn không đánh dấu cờ kiểm tra request đã từng retry chưa (`_retry = true`).
+*   **Hậu quả:** Axios Interceptor sẽ lại bắt lỗi 401 của chính API refresh token và kích hoạt gọi tiếp API refresh token $\rightarrow$ Tạo ra vòng lặp vô tận (infinite loop) gửi hàng nghìn request làm sập server API của bạn và làm đơ trình duyệt của người dùng.
+*   ✅ *Best practice:* Luôn bọc API `/auth/refresh` bằng lệnh gọi axios gốc (không dùng instance apiClient có cài interceptor 401), và đánh dấu cờ `_retry = true` trên config để chặn đứng việc gửi lại lần thứ hai.
 
 ---
 
-## IV. LƯU Ý CẠM BẪY (PITFALLS & GOTCHAS)
-
-Khi làm việc với **API Layer & HTTP Client (Tầng API & Client HTTP)**, các lập trình viên thường mắc phải một số sai lầm nghiêm trọng. Việc nhận thức được các cạm bẫy này sẽ giúp bạn tránh được những "quả bom nổ chậm" trong dự án.
-
-### 1. Over-engineering (Làm quá phức tạp)
-Nhiều kỹ sư có xu hướng áp dụng những pattern quá phức tạp vào những tính năng đơn giản. 
-- **Triệu chứng:** Sử dụng toàn bộ một thư viện khổng lồ chỉ để lưu một biến boolean (như Dark mode).
-- **Giải pháp:** Áp dụng nguyên tắc **KISS (Keep It Simple, Stupid)**. Bắt đầu với giải pháp đơn giản nhất (ví dụ: `useState` hoặc Context API) và chỉ nâng cấp (ví dụ: Zustand, Redux) khi thực sự cần thiết.
-
-### 2. Bỏ qua việc tối ưu hóa Re-renders (Wasted Renders)
-Trong môi trường React/React Native, re-renders vô ích là kẻ thù số một của hiệu năng.
-- **Triệu chứng:** Ứng dụng giật lag khi gõ text hoặc cuộn danh sách (scroll list).
-- **Giải pháp:** 
-  - Sử dụng `React.memo` cho các component nặng.
-  - Tối ưu hoá dependency array trong `useMemo` và `useCallback`.
-  - Phân tách State: Đừng đặt trạng thái toàn cục (global state) nếu nó chỉ liên quan đến một component cụ thể.
-
-### 3. Thiếu xử lý lỗi triệt để (Swallowing Errors)
-- **Triệu chứng:** Màn hình trắng xóa hoặc không có phản hồi khi có lỗi mạng xảy ra.
-- **Giải pháp:** 
-  - Bọc các tính năng trọng yếu bằng `ErrorBoundary`.
-  - Hiển thị Toast/Snackbar thân thiện cho người dùng.
-  - Ghi log lỗi đẩy về server để developer có thể theo dõi.
-
-> [!CAUTION]
-> **An ninh (Security):** Tuyệt đối không lưu trữ các thông tin nhạy cảm (Access Token dài hạn, Secret Keys) trong bộ nhớ tạm mà không được mã hóa hoặc trong AsyncStorage không bảo mật trên thiết bị di động.
-
----
-
-## V. CÂU HỎI PHỎNG VẤN THƯỜNG GẶP (FAQ & INTERVIEW QUESTIONS)
-
-Để giúp bạn củng cố kiến thức, dưới đây là một số câu hỏi phỏng vấn phổ biến xoay quanh chủ đề này:
-
-1. **Câu hỏi:** Bạn hãy giải thích cơ chế hoạt động chi tiết của API Layer & HTTP Client (Tầng API & Client HTTP) trong kiến trúc hiện tại?
-   - **Gợi ý trả lời:** Nhấn mạnh vào luồng dữ liệu (Data flow), cách quản lý trạng thái, và cách nó tương tác với các Layer khác (API, UI, Cache). Trình bày về cơ chế Reactivity và Lifecycle.
-
-2. **Câu hỏi:** Khi nào KHÔNG NÊN sử dụng công nghệ này?
-   - **Gợi ý trả lời:** Thảo luận về Trade-offs. Nêu bật việc công nghệ nào cũng có chi phí về bundle size, learning curve. Khi dự án quá nhỏ hoặc không yêu cầu tính năng đặc thù đó, việc áp dụng sẽ là một gánh nặng.
-
-3. **Câu hỏi:** Làm thế nào để scale (mở rộng) kiến trúc này khi team tăng lên từ 5 lên 50 developer?
-   - **Gợi ý trả lời:** Áp dụng Feature-based folder structure, Domain-Driven Design (DDD) ở phía Frontend, sử dụng các công cụ kiểm soát chất lượng (ESLint, Prettier, Husky, CI/CD), và viết Unit/E2E Test đầy đủ.
-
----
-
-## TỔNG KẾT
-Việc làm chủ **API Layer & HTTP Client (Tầng API & Client HTTP)** đòi hỏi thời gian và sự thực hành liên tục. Hãy bắt đầu bằng việc tích hợp các ví dụ trên vào một side-project, sau đó profiling hiệu năng để thấy sự khác biệt. Chúc bạn thành công!
-
-
----
-## PHỤ LỤC MỞ RỘNG 1: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống API Layer & HTTP Client (Tầng API & Client HTTP) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). API Layer & HTTP Client (Tầng API & Client HTTP) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển API Layer & HTTP Client (Tầng API & Client HTTP) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán API Layer & HTTP Client (Tầng API & Client HTTP).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
-
-
----
-## PHỤ LỤC MỞ RỘNG 2: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống API Layer & HTTP Client (Tầng API & Client HTTP) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). API Layer & HTTP Client (Tầng API & Client HTTP) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển API Layer & HTTP Client (Tầng API & Client HTTP) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán API Layer & HTTP Client (Tầng API & Client HTTP).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
+## 💡 5 QUY TẮC VÀNG VỀ HTTP CLIENT & API LAYER
+1.  **Luôn bọc HTTP Client trong một Instance tập trung:** Quản lý base URL, cấu hình timeout đồng bộ.
+2.  **Dùng Request Interceptor chèn JWT Token:** Tránh viết code truyền token thủ công ở từng request.
+3.  **Bắt lỗi 401 để tự động Refresh Token ngầm:** Tăng trải nghiệm sử dụng, giúp phiên làm việc của người dùng diễn ra liền mạch.
+4.  **Chặn đứng vòng lặp vô tận bằng cờ kiểm soát:** Không chạy lại interceptor 401 cho các request gọi refresh token hoặc request đã retry.
+5.  **Ánh xạ lỗi API thành tin nhắn thân thiện:** Tránh hiển thị các mã lỗi kỹ thuật thô (`AxiosError`, `status 500`) trực tiếp lên màn hình của người dùng.

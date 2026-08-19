@@ -1,5 +1,3 @@
-# Bài 02 - Expo Framework & Project Setup (Nền tảng Expo & Khởi tạo dự án)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao Expo trở thành tiêu chuẩn cho phát triển React Native?

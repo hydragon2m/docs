@@ -1,5 +1,3 @@
-# Bài 03 - Flexbox vs Grid Deep Dive (So sánh & Kết hợp bố cục)
-
 ## I. KHÁI QUÁT
 
 Flexbox và Grid Layout là hai công cụ bố cục (layout tools) mạnh mẽ nhất trong CSS hiện đại. Ban đầu, có sự nhầm lẫn rằng Grid sẽ thay thế Flexbox. Thực tế, chúng được thiết kế để bổ sung cho nhau. 

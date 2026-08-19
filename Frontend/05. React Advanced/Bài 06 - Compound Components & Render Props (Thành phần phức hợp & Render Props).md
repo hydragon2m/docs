@@ -1,5 +1,3 @@
-# Bài 06 - Compound Components & Render Props (Thành phần phức hợp & Render Props)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Thử thách về Tính tùy biến của Component UI

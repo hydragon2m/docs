@@ -1,275 +1,145 @@
-# Bài 06 - Jotai & Atomic State (Quản lý trạng thái nguyên tử)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
-Chào mừng bạn đến với bài học chuyên sâu về **Jotai & Atomic State (Quản lý trạng thái nguyên tử)**. Trong hệ sinh thái phát triển Frontend và Mobile hiện đại, việc nắm vững các khái niệm cốt lõi này không chỉ giúp bạn xây dựng ứng dụng với hiệu năng cao mà còn đảm bảo khả năng mở rộng (scalability) và bảo trì (maintainability) lâu dài.
+### 1. Khái niệm Atomic State Management
+Trong các thư viện quản lý state tập trung (như Redux, Zustand), bạn thiết kế một Store lớn chứa toàn bộ trạng thái của ứng dụng (hoặc của một module lớn). Khi cập nhật, bạn cần dùng bộ lọc (selectors) để tránh re-render các phần không liên quan.
 
-### 1. Jotai & Atomic State (Quản lý trạng thái nguyên tử) là gì?
-**Jotai & Atomic State (Quản lý trạng thái nguyên tử)** đóng vai trò là một trong những thành phần quan trọng nhất trong kiến trúc tổng thể. Nó cung cấp cơ chế để xử lý luồng dữ liệu, tương tác người dùng, và tối ưu hoá việc render trên màn hình thiết bị hoặc trình duyệt.
-
-> [!NOTE] 
-> **Lịch sử & Sự tiến hoá**  
-> Trong những năm qua, công nghệ xoay quanh Jotai & Atomic State (Quản lý trạng thái nguyên tử) đã có những bước tiến vượt bậc. Từ những kiến trúc Monolithic truyền thống, chúng ta đã chuyển sang các mô hình Component-based và Feature-based, giúp cho việc tái sử dụng code trở nên dễ dàng hơn bao giờ hết.
-
-### 2. Tại sao phải sử dụng Jotai & Atomic State (Quản lý trạng thái nguyên tử)?
-- **Hiệu năng (Performance):** Tối ưu hóa chu kỳ render và quản lý tài nguyên hiệu quả.
-- **Bảo trì (Maintainability):** Code được tổ chức rõ ràng, dễ dàng refactor.
-- **Trải nghiệm người dùng (UX):** Phản hồi nhanh chóng, mượt mà (smooth animations, transitions).
-- **Hệ sinh thái (Ecosystem):** Tích hợp hoàn hảo với các thư viện và công cụ hiện đại (React, TypeScript, Vite, v.v.).
-
+**Jotai** (trong tiếng Nhật có nghĩa là "trạng thái") đi theo một trường phái hoàn toàn khác gọi là **Atomic State (Quản lý trạng thái nguyên tử)**, lấy cảm hứng từ thư viện Recoil của Facebook.
+*   **Mô hình nguyên tử:** Thay vì gom tất cả vào một Store lớn, bạn chia nhỏ dữ liệu thành các mảnh cực nhỏ độc lập gọi là **Atoms** (nguyên tử).
+*   **Lợi ích:** Các atoms có thể kết hợp, lồng ghép hoặc kế thừa lẫn nhau (derived atoms) một cách linh hoạt. Việc thay đổi giá trị của một atom chỉ kích hoạt re-render duy nhất các component đang trực tiếp kết nối tới atom đó, mang lại hiệu năng tối ưu tự nhiên mà không cần viết các hàm selector thủ công.
 
 ```mermaid
-sequenceDiagram
-    participant UI as React Component
-    participant Store as State/Cache Store
-    participant API as Backend API
-    UI->>Store: Request Data / Action
-    alt Cache Hit
-        Store-->>UI: Return Cached Data
-    else Cache Miss
-        Store->>API: Fetch Data
-        API-->>Store: Response
-        Store-->>UI: Return Data & Update Cache
+flowchart TD
+    subgraph CentralizedStore["Kiến trúc Store Tập trung (Zustand/Redux)"]
+        Store["[Store chính: auth, cart, theme]"]
+    end
+    
+    subgraph AtomicStore["Kiến trúc Atomic (Jotai)"]
+        Atom1["atom(theme)"]
+        Atom2["atom(cartList)"]
+        Atom3["atom(totalPrice) <br/>(Tự động tính từ cartList)"]
+        
+        Atom2 -->|Tính toán phái sinh| Atom3
     end
 ```
 
-
 ---
 
-## II. CHI TIẾT KỸ THUẬT (TECHNICAL DETAILS)
+## II. CHI TIẾT KỸ THUẬT (DETAILED DEEP DIVE)
 
-### 1. Kiến trúc nội tại (Internal Architecture)
-Để thực sự hiểu sâu về Jotai & Atomic State (Quản lý trạng thái nguyên tử), chúng ta cần mổ xẻ cách nó hoạt động dưới nền tảng (under the hood). Cơ chế cốt lõi dựa trên việc theo dõi và phản ứng lại các thay đổi (reactivity).
+### 1. Các loại Atoms trong Jotai
 
-| Thành phần (Component) | Vai trò (Role) | Kỹ thuật tối ưu (Optimization) |
-| :--- | :--- | :--- |
-| **Core Engine** | Xử lý logic chính và phân phối sự kiện | Sử dụng Web Workers hoặc Background Threads |
-| **Bridge / Middleware** | Giao tiếp giữa các tầng (VD: JS Thread & Native) | Batched updates, Serialization tối ưu |
-| **Reactivity System** | Lắng nghe thay đổi trạng thái | Virtual DOM, Memoization, Dependency Tracking |
-| **Storage / Cache** | Lưu trữ tạm thời để giảm độ trễ | LRU Cache, Persistence Layer |
+Jotai cung cấp cú pháp khai báo atom cực kỳ đơn giản và chia làm 3 nhóm chính:
 
-> [!TIP]
-> **Best Practice:** Luôn chia nhỏ các logic phức tạp thành các hàm thuần (pure functions) để dễ dàng viết Unit Test và tái sử dụng.
-
-### 2. Vòng đời (Lifecycle) và Luồng thực thi (Execution Flow)
-Trong quá trình vòng đời của Jotai & Atomic State (Quản lý trạng thái nguyên tử), có một số giai đoạn quan trọng:
-1. **Khởi tạo (Mounting / Initialization):** Cấu hình ban đầu, cấp phát bộ nhớ.
-2. **Cập nhật (Updating / Rendering):** Lắng nghe dữ liệu thay đổi, tính toán lại giao diện.
-3. **Phân phối (Dispatching):** Gửi các action hoặc event tới các observer.
-4. **Hủy bỏ (Unmounting / Cleanup):** Giải phóng bộ nhớ, hủy các kết nối mạng và event listeners.
-
-> [!WARNING]
-> **Memory Leaks:** Việc quên thực hiện bước Cleanup (ví dụ trong `useEffect` của React) là nguyên nhân hàng đầu dẫn đến rò rỉ bộ nhớ.
-
----
-
-## III. VÍ DỤ MINH HỌA (EXAMPLES)
-
-Dưới đây là một số ví dụ minh họa cách triển khai Jotai & Atomic State (Quản lý trạng thái nguyên tử) trong dự án thực tế. Các đoạn code được viết bằng **TypeScript** và tuân thủ các tiêu chuẩn mã sạch (Clean Code).
-
-### Ví dụ 1: Triển khai cơ bản
-Đoạn mã dưới đây minh hoạ cách thiết lập và sử dụng Jotai & Atomic State (Quản lý trạng thái nguyên tử) ở mức cơ bản nhất.
-
+#### a. Read-only Atom (Atom chỉ đọc):
+Là các atom phái sinh (computed state), tự động tính toán giá trị dựa trên giá trị của các atom khác.
 ```typescript
-import React, { useState, useEffect, useCallback } from 'react';
+const doubleCountAtom = atom((get) => get(countAtom) * 2);
+```
 
-// Định nghĩa kiểu dữ liệu cho Payload
-interface PayloadData {
-    id: string;
-    status: 'idle' | 'loading' | 'success' | 'error';
-    data?: any;
-    errorMessage?: string;
-}
+#### b. Write-only Atom (Atom chỉ ghi):
+Chỉ dùng để thực thi các action thay đổi dữ liệu của các atom khác mà bản thân nó không lưu trữ giá trị hiển thị.
+```typescript
+const multiplyCountAtom = atom(null, (get, set, by) => {
+  set(countAtom, get(countAtom) * by);
+});
+```
 
-/**
- * Hook tùy chỉnh quản lý Jotai & Atomic State (Quản lý trạng thái nguyên tử)
- */
-export const useCustomHook = (initialId: string) => {
-    const [state, setState] = useState<PayloadData>(init_state(initialId));
+#### c. Read-Write Atom (Atom đọc-ghi):
+Cho phép cả đọc giá trị và cập nhật giá trị.
+```typescript
+const countAtom = atom(0);
+```
 
-    const fetchData = useCallback(async () => {
-        setState(prev => ({ ...prev, status: 'loading' }));
-        try {
-            // Giả lập gọi API hoặc Bridge
-            const response = await mockApiCall(initialId);
-            setState({ id: initialId, status: 'success', data: response });
-        } catch (error: any) {
-            setState({ id: initialId, status: 'error', errorMessage: error.message });
-        }
-    }, [initialId]);
+---
 
-    useEffect(() => {
-        fetchData();
-        
-        return () => {
-            // Cleanup logic tại đây
-            console.log("Cleaning up resources...");
-        };
-    }, [fetchData]);
+## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE EXAMPLES & ANALYSIS)
 
-    return { state, refetch: fetchData };
+### 1. Triển khai Hệ thống Đếm ký tự động (Word Counter) bằng Atoms lồng nhau
+Dưới đây là một ví dụ thực tế. Chúng ta thiết lập một ô nhập văn bản: khi người dùng gõ chữ, hệ thống tự động tính toán số lượng từ (word count) và số lượng ký tự (char count) một cách bất đồng bộ bằng các Atoms lồng nhau.
+
+```tsx
+// File: src/store/textStore.ts
+import { atom } from 'jotai';
+
+// 1. Atom gốc lưu trữ chuỗi văn bản người dùng nhập
+export const textAtom = atom<string>('');
+
+// 2. Atom phái sinh (Read-only): Tự động đếm số lượng ký tự
+export const charCountAtom = atom((get) => {
+  const text = get(textAtom);
+  return text.length;
+});
+
+// 3. Atom phái sinh (Read-only): Tự động đếm số lượng từ
+export const wordCountAtom = atom((get) => {
+  const text = get(textAtom);
+  const words = text.trim().split(/\s+/);
+  return text.trim() === '' ? 0 : words.length;
+});
+```
+
+#### Sử dụng trong React Component:
+```tsx
+// File: src/components/TextAnalyzer.tsx
+import React from 'react';
+import { useAtom, useAtomValue } from 'jotai';
+import { textAtom, charCountAtom, wordCountAtom } from '../store/textStore';
+
+export const TextAnalyzer = () => {
+  // useAtom hoạt động giống hệt useState của React
+  const [text, setText] = useAtom(textAtom);
+
+  // useAtomValue chỉ đọc giá trị (không nhận hàm set), giúp tối ưu hiệu năng
+  const charCount = useAtomValue(charCountAtom);
+  const wordCount = useAtomValue(wordCountAtom);
+
+  return (
+    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow border space-y-4">
+      <h3 className="font-bold text-slate-800">Bộ phân tích văn bản</h3>
+      
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Nhập nội dung văn bản vào đây..."
+        className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+      />
+
+      <div className="grid grid-cols-2 gap-4 text-center">
+        <div className="p-3 bg-slate-50 rounded-lg border">
+          <span className="text-xs text-slate-500 block">Số ký tự</span>
+          <strong className="text-lg text-slate-800">{charCount}</strong>
+        </div>
+        <div className="p-3 bg-slate-50 rounded-lg border">
+          <span className="text-xs text-slate-500 block">Số từ</span>
+          <strong className="text-lg text-blue-600">{wordCount}</strong>
+        </div>
+      </div>
+    </div>
+  );
 };
-
-// Helper function
-function init_state(id: string): PayloadData {
-    return { id, status: 'idle' };
-}
-
-async function mockApiCall(id: string): Promise<any> {
-    return new Promise((resolve) => setTimeout(() => resolve({ timestamp: Date.now() }), 1000));
-}
 ```
 
-### Ví dụ 2: Tích hợp nâng cao với Error Boundary và Retry Logic
-Trong môi trường Production, việc chỉ gọi dữ liệu là chưa đủ. Bạn cần xử lý các tình huống lỗi mạng, retry, và logging.
+---
 
-```typescript
-// Nâng cao: Wrapper xử lý lỗi và Retry
-export class TopicManager {
-    private retryCount: number = 0;
-    private readonly MAX_RETRIES = 3;
+## IV. LƯU Ý, CẠM BẪY VÀ QUY TẮC CỐT LÕI (PITFALLS & BEST PRACTICES)
 
-    constructor(private logger: Logger) {}
-
-    async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-        try {
-            const result = await operation();
-            this.retryCount = 0; // Reset sau khi thành công
-            return result;
-        } catch (error) {
-            if (this.retryCount < this.MAX_RETRIES) {
-                this.retryCount++;
-                this.logger.warn(`Retry attempt ${this.retryCount} cho Jotai & Atomic State (Quản lý trạng thái nguyên tử)`);
-                // Exponential Backoff
-                await new Promise(res => setTimeout(res, 1000 * Math.pow(2, this.retryCount)));
-                return this.executeWithRetry(operation);
-            }
-            this.logger.error(`Thất bại hoàn toàn sau ${this.MAX_RETRIES} lần thử.`);
-            throw error;
-        }
+### 1. Cạm bẫy khởi tạo Atom bên trong thân Component (Render Pass)
+*   **Vấn đề:** Khai báo hàm `atom(0)` bên trong Component:
+    ```typescript
+    // ❌ LỖI NGHIÊM TRỌNG
+    export const MyComponent = () => {
+      const myAtom = atom(0); // Atom bị khởi tạo lại ở mỗi lượt render!
+      const [val, setVal] = useAtom(myAtom);
     }
-}
-
-interface Logger {
-    warn(msg: string): void;
-    error(msg: string): void;
-}
-```
-
-> [!IMPORTANT]  
-> **Production Readiness:** Các ví dụ trên là bộ khung vững chắc cho Production. Bạn nên tích hợp thêm công cụ theo dõi như Sentry hoặc Datadog để thu thập log từ client.
+    ```
+*   **Hậu quả:** State sẽ bị reset về giá trị mặc định ở mỗi lần component re-render, gây mất dữ liệu.
+*   ✅ *Best practice:* Luôn luôn khai báo các atoms ở phạm vi **bên ngoài** (global scope) của component, thường là định nghĩa trong các file store riêng biệt.
 
 ---
 
-## IV. LƯU Ý CẠM BẪY (PITFALLS & GOTCHAS)
-
-Khi làm việc với **Jotai & Atomic State (Quản lý trạng thái nguyên tử)**, các lập trình viên thường mắc phải một số sai lầm nghiêm trọng. Việc nhận thức được các cạm bẫy này sẽ giúp bạn tránh được những "quả bom nổ chậm" trong dự án.
-
-### 1. Over-engineering (Làm quá phức tạp)
-Nhiều kỹ sư có xu hướng áp dụng những pattern quá phức tạp vào những tính năng đơn giản. 
-- **Triệu chứng:** Sử dụng toàn bộ một thư viện khổng lồ chỉ để lưu một biến boolean (như Dark mode).
-- **Giải pháp:** Áp dụng nguyên tắc **KISS (Keep It Simple, Stupid)**. Bắt đầu với giải pháp đơn giản nhất (ví dụ: `useState` hoặc Context API) và chỉ nâng cấp (ví dụ: Zustand, Redux) khi thực sự cần thiết.
-
-### 2. Bỏ qua việc tối ưu hóa Re-renders (Wasted Renders)
-Trong môi trường React/React Native, re-renders vô ích là kẻ thù số một của hiệu năng.
-- **Triệu chứng:** Ứng dụng giật lag khi gõ text hoặc cuộn danh sách (scroll list).
-- **Giải pháp:** 
-  - Sử dụng `React.memo` cho các component nặng.
-  - Tối ưu hoá dependency array trong `useMemo` và `useCallback`.
-  - Phân tách State: Đừng đặt trạng thái toàn cục (global state) nếu nó chỉ liên quan đến một component cụ thể.
-
-### 3. Thiếu xử lý lỗi triệt để (Swallowing Errors)
-- **Triệu chứng:** Màn hình trắng xóa hoặc không có phản hồi khi có lỗi mạng xảy ra.
-- **Giải pháp:** 
-  - Bọc các tính năng trọng yếu bằng `ErrorBoundary`.
-  - Hiển thị Toast/Snackbar thân thiện cho người dùng.
-  - Ghi log lỗi đẩy về server để developer có thể theo dõi.
-
-> [!CAUTION]
-> **An ninh (Security):** Tuyệt đối không lưu trữ các thông tin nhạy cảm (Access Token dài hạn, Secret Keys) trong bộ nhớ tạm mà không được mã hóa hoặc trong AsyncStorage không bảo mật trên thiết bị di động.
-
----
-
-## V. CÂU HỎI PHỎNG VẤN THƯỜNG GẶP (FAQ & INTERVIEW QUESTIONS)
-
-Để giúp bạn củng cố kiến thức, dưới đây là một số câu hỏi phỏng vấn phổ biến xoay quanh chủ đề này:
-
-1. **Câu hỏi:** Bạn hãy giải thích cơ chế hoạt động chi tiết của Jotai & Atomic State (Quản lý trạng thái nguyên tử) trong kiến trúc hiện tại?
-   - **Gợi ý trả lời:** Nhấn mạnh vào luồng dữ liệu (Data flow), cách quản lý trạng thái, và cách nó tương tác với các Layer khác (API, UI, Cache). Trình bày về cơ chế Reactivity và Lifecycle.
-
-2. **Câu hỏi:** Khi nào KHÔNG NÊN sử dụng công nghệ này?
-   - **Gợi ý trả lời:** Thảo luận về Trade-offs. Nêu bật việc công nghệ nào cũng có chi phí về bundle size, learning curve. Khi dự án quá nhỏ hoặc không yêu cầu tính năng đặc thù đó, việc áp dụng sẽ là một gánh nặng.
-
-3. **Câu hỏi:** Làm thế nào để scale (mở rộng) kiến trúc này khi team tăng lên từ 5 lên 50 developer?
-   - **Gợi ý trả lời:** Áp dụng Feature-based folder structure, Domain-Driven Design (DDD) ở phía Frontend, sử dụng các công cụ kiểm soát chất lượng (ESLint, Prettier, Husky, CI/CD), và viết Unit/E2E Test đầy đủ.
-
----
-
-## TỔNG KẾT
-Việc làm chủ **Jotai & Atomic State (Quản lý trạng thái nguyên tử)** đòi hỏi thời gian và sự thực hành liên tục. Hãy bắt đầu bằng việc tích hợp các ví dụ trên vào một side-project, sau đó profiling hiệu năng để thấy sự khác biệt. Chúc bạn thành công!
-
-
----
-## PHỤ LỤC MỞ RỘNG 1: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Jotai & Atomic State (Quản lý trạng thái nguyên tử) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Jotai & Atomic State (Quản lý trạng thái nguyên tử) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Jotai & Atomic State (Quản lý trạng thái nguyên tử) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Jotai & Atomic State (Quản lý trạng thái nguyên tử).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
-
-
----
-## PHỤ LỤC MỞ RỘNG 2: TÀI LIỆU THAM KHẢO VÀ TÀI NGUYÊN HỌC TẬP THÊM
-
-### 1. Kiến trúc phân tầng chi tiết
-Để xây dựng một hệ thống Jotai & Atomic State (Quản lý trạng thái nguyên tử) hoàn hảo, chúng ta thường áp dụng kiến trúc 3 tầng chuẩn:
-- **Presentation Layer (Tầng giao diện):** Chịu trách nhiệm hiển thị UI, không chứa logic nghiệp vụ phức tạp.
-- **Domain Layer (Tầng nghiệp vụ):** Chứa các quy tắc cốt lõi (Business rules). Jotai & Atomic State (Quản lý trạng thái nguyên tử) hoạt động mạnh mẽ tại đây.
-- **Data Layer (Tầng dữ liệu):** Xử lý giao tiếp với Backend (REST/GraphQL), Local Database (SQLite, Realm, MMKV).
-
-### 2. Mã nguồn mở tham khảo
-- [React Native Official Documentation](https://reactnative.dev)
-- [Expo Documentation](https://docs.expo.dev)
-- [TanStack Query](https://tanstack.com/query)
-- [Zustand Github](https://github.com/pmndrs/zustand)
-- [Frontend System Design](https://www.frontendinterviewhandbook.com)
-
-### 3. Công cụ khuyên dùng (Recommended Tooling)
-- **VSCode Extensions:** ESLint, Prettier, Error Lens, GitLens.
-- **Debugging:** React Native Debugger, Flipper, React Query DevTools.
-- **Performance Profiling:** Lighthouse (Web), React Profiler, Xcode Instruments (iOS), Android Studio Profiler (Android).
-
-### 4. Tối ưu hóa Build và Bundle Size
-Một khía cạnh thường bị bỏ qua khi phát triển Jotai & Atomic State (Quản lý trạng thái nguyên tử) là kích thước của ứng dụng sau khi đóng gói.
-- **Code Splitting / Lazy Loading:** Chia nhỏ ứng dụng thành nhiều chunk để tải dần khi cần.
-- **Tree Shaking:** Cấu hình bundler (Vite, Webpack, Metro) để loại bỏ những đoạn code không được sử dụng (dead code elimination).
-- **Image Optimization:** Sử dụng định dạng WebP (cho Web) hoặc nén ảnh assets trong Mobile (sử dụng Expo Image) để giảm tải tài nguyên mạng.
-
-> [!NOTE]
-> Việc liên tục học hỏi và cập nhật kiến thức là bắt buộc trong hệ sinh thái Frontend đang thay đổi từng ngày. Hãy tham gia cộng đồng, đọc mã nguồn các thư viện lớn để hiểu rõ hơn về cách các kỹ sư hàng đầu giải quyết bài toán Jotai & Atomic State (Quản lý trạng thái nguyên tử).
-
-*Tài liệu này được biên soạn kỹ lưỡng dành cho hệ thống kiến thức cao cấp.*
+## 💡 5 QUY TẮC VÀNG VỀ JOTAI (ATOMIC STATE)
+1.  **Khai báo Atom ngoài thân Component:** Tránh lỗi reset state do khởi tạo lại đối tượng atom ở mỗi lượt render.
+2.  **Dùng `useAtomValue` nếu chỉ cần đọc:** Ngăn chặn việc import các hàm set không sử dụng, giúp code sạch và tường minh.
+3.  **Tận dụng Atom phái sinh (Derived Atoms):** Giảm tải bộ nhớ bằng cách tính toán các dữ liệu liên đới tự động từ atom gốc.
+4.  **Tách biệt tệp tin store:** Gom nhóm các atom có cùng chức năng vào chung một file (như `textStore.ts`) để dễ quản lý.
+5.  **Dùng `atomWithStorage` để lưu cache:** Tích hợp sẵn middleware của Jotai để tự động đồng bộ giá trị atom xuống `localStorage` hoặc `AsyncStorage`.

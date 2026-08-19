@@ -1,5 +1,3 @@
-# Bài 09 - Animations & Gestures (Hoạt hình & Cử chỉ chạm)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sự quan trọng của Chuyển động trong Ứng dụng Di động

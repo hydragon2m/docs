@@ -1,5 +1,3 @@
-# Bài 09 - useReducer & Complex State (Quản lý trạng thái phức tạp)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần `useReducer`?

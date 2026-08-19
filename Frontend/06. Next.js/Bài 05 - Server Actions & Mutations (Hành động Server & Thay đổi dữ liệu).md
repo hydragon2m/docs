@@ -1,5 +1,3 @@
-# Bài 05 - Server Actions & Mutations (Hành động Server & Thay đổi dữ liệu)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Sự phức tạp khi thay đổi dữ liệu (Mutations) theo kiểu cũ

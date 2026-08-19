@@ -1,5 +1,3 @@
-# Bài 06 - Dynamic Routes & Parallel Routes (Định tuyến động & Song song)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Nhu cầu xây dựng giao diện đa luồng và động

@@ -1,5 +1,3 @@
-# Bài 06 - useRef & DOM Manipulation (Tham chiếu & Thao tác DOM)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần `useRef`?

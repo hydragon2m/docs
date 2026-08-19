@@ -1,5 +1,3 @@
-# Bài 01 - State Management Overview (Tổng quan quản lý trạng thái)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Phân loại Trạng thái (State Taxonomy) trong Ứng dụng Modern Frontend

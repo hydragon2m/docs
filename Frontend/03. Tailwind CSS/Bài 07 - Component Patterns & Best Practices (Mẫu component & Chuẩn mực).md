@@ -1,5 +1,3 @@
-# Bài 07 - Component Patterns & Best Practices (Mẫu component & Chuẩn mực)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Thách thức khi viết Reusable Components bằng Tailwind CSS

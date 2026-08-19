@@ -1,5 +1,3 @@
-# Bài 08 - Offline Storage & Data Persistence (Lưu trữ ngoại tuyến)
-
 ## I. KHÁI QUÁT (OVERVIEW)
 
 ### 1. Tại sao cần lưu trữ dữ liệu ngoại tuyến (Offline) trên thiết bị di động?
