@@ -1,4 +1,4 @@
-## 1. Function Type Expressions là gì?
+ ## 1. Function Type Expressions là gì?
 Trong JavaScript, hàm là các đối tượng hạng nhất (first-class citizens), nghĩa là chúng ta có thể truyền hàm làm tham số vào một hàm khác, lưu hàm vào biến, hoặc trả về một hàm từ hàm khác (Callback/Higher-Order Functions).
 
 Trong TypeScript, **Function Type Expressions** (Biểu thức kiểu của hàm) cung cấp cú pháp đơn giản nhất để bạn mô tả chính xác **chữ ký kiểu** của một hàm: nhận vào tham số gì và trả về giá trị gì.
