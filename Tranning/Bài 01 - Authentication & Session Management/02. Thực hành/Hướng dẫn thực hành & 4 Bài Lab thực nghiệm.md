@@ -1,6 +1,3 @@
-# HƯỚNG DẪN THỰC HÀNH: 4 BÀI LAB XÁC THỰC THỰC CHIẾN
-## Trình duyệt $\leftrightarrow$ Next.js $\leftrightarrow$ NestJS $\leftrightarrow$ Redis
-
 Thư mục thực hành này chứa toàn bộ mã nguồn có thể chạy thực tế bao gồm:
 * **Backend:** NestJS API tại thư mục [`backend-nestjs/`](file:///home/hy/Documents/Obsidian%20Vault/Tranning/B%C3%A0i%2001%20-%20Authentication%20&%20Session%20Management/02.%20Th%E1%BB%B1c%20h%C3%A0nh/backend-nestjs) (Chạy cổng `4000`).
 * **Frontend:** Next.js App Router tại thư mục [`frontend-nextjs/`](file:///home/hy/Documents/Obsidian%20Vault/Tranning/B%C3%A0i%2001%20-%20Authentication%20&%20Session%20Management/02.%20Th%E1%BB%B1c%20h%C3%A0nh/frontend-nextjs) (Chạy cổng `3000`).

@@ -4,8 +4,7 @@
  * Next.js Edge Middleware: Bảo vệ route ở tầng Edge trước khi vào Server Component
  * =======================================================================
  */
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/request';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
