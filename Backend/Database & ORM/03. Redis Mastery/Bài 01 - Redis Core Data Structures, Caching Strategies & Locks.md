@@ -149,6 +149,7 @@ flowchart TD
     root --> ZSET["Sorted Sets (ZSET)"]
     root --> BIT["Bitmaps"]
     root --> HLL["HyperLogLog"]
+    root --> STRM["Streams"]
 
     STR --> STR1["Text / JSON Caching"]
     STR --> STR2["Atomic Counters INCR"]
@@ -175,6 +176,10 @@ flowchart TD
 
     HLL --> HLL1["Unique Visitors Count UV"]
     HLL --> HLL2["Cardinality Estimation 12KB"]
+
+    STRM --> STRM1["Event Sourcing & Audit Logs"]
+    STRM --> STRM2["Consumer Groups Queue"]
+    STRM --> STRM3["At-least-once Delivery (ACK)"]
 ```
 
 #### 1. Strings (Chuỗi nhị phân - Binary Safe)
@@ -217,6 +222,15 @@ flowchart TD
 * **Ưu điểm tuyệt đối:** Bất kể bạn đếm 100 hay 10 tỷ phần tử duy nhất, HyperLogLog chỉ tiêu tốn cố định **tối đa 12KB RAM** với độ lệch chuẩn sai số cực nhỏ chỉ **~0.81%**.
 * **Lệnh cốt lõi:** `PFADD`, `PFCOUNT`, `PFMERGE`.
 * **Use case:** Đếm số lượng Unique Visitors (UV) của website hàng triệu lượt truy cập mỗi ngày, đếm số lượt tìm kiếm từ khóa duy nhất.
+
+#### 8. Streams (Hàng đợi thông điệp nhật ký - Append-Only Log)
+* **Bản chất:** Ra mắt từ Redis 5.0, là cấu trúc dữ liệu dạng chuỗi nhật ký chỉ nối thêm (Append-Only Log), lấy cảm hứng từ Apache Kafka nhưng vận hành cực nhanh trong RAM. Mỗi message được gán một ID thời gian duy nhất (`<millisecondsTime>-<sequenceNumber>`).
+* **Tính năng vượt trội so với Lists và Pub/Sub:**
+  * **Consumer Groups:** Cho phép phân tán tải cho một cụm worker; mỗi message chỉ được gửi tới một consumer trong cùng một group.
+  * **Cơ chế xác nhận tin nhắn (ACK):** Khi consumer nhận message, tin nhắn được chuyển vào **PEL (Pending Entries List)**. Chỉ khi consumer gọi `XACK`, tin nhắn mới chính thức hoàn thành. Nếu consumer crash trước khi ACK, các worker khác có thể kiểm tra danh sách tồn đọng (`XPENDING`) và tiếp quản xử lý (`XCLAIM` / `XAUTOCLAIM`), đảm bảo tính tin cậy tuyệt đối (**At-least-once Delivery**).
+  * **Bền vững (Persistence):** Khác với Pub/Sub (tin nhắn mất ngay nếu không có subscriber online), Streams lưu trữ tin nhắn bền vững trên RAM và ổ đĩa (RDB/AOF), cho phép client đọc lại lịch sử dữ liệu bất kỳ lúc nào.
+* **Lệnh cốt lõi:** `XADD`, `XREAD`, `XGROUP CREATE`, `XREADGROUP`, `XACK`, `XPENDING`, `XCLAIM`, `XRANGE`, `XTRIM`.
+* **Use case:** Hệ thống Event-Driven Architecture, Hàng đợi xử lý tác vụ tài chính cần ACK chặt chẽ, Audit Logs, Time-Series Events, giải pháp Message Broker thay thế Kafka/RabbitMQ cho các hệ thống vừa và nhỏ.
 
 ---
 
@@ -286,6 +300,18 @@ flowchart TD
         W_DBResult -- "Thất bại (Rollback)" --> W_Error["Báo lỗi & Giữ nguyên trạng thái Cache"]
     end
 ```
+
+> [!WARNING]
+> ##### Cạm bẫy Race Condition trong Cache-Aside & Kỹ thuật Xóa kép có trễ (Delayed Double Deletion)
+> **Kịch bản bất đồng bộ dữ liệu (Stale Cache Race Condition):**
+> 1. **Luồng A (Đọc):** Đọc cache miss -> Truy vấn DB lấy dữ liệu cũ giá trị $V_1$.
+> 2. **Luồng B (Ghi):** Cập nhật DB thành giá trị mới $V_2$ -> Xóa cache key thành công.
+> 3. **Luồng A:** Do độ trễ mạng hoặc tiến trình GC pause, đến giờ mới thực thi xong lệnh ghi ngược $V_1$ vào Redis.
+> 👉 **Hệ quả:** Redis sẽ lưu giá trị cũ $V_1$ vĩnh viễn (hoặc tới khi hết TTL), trong khi Database đã là $V_2$!
+>
+> **Giải pháp khắc phục chuẩn Production:**
+> * **Giải pháp 1: Delayed Double Deletion (Xóa kép có trễ):** Sau khi luồng ghi cập nhật DB và xóa cache lần 1, luồng ghi sẽ gửi một message vào hàng đợi (hoặc sleep ngầm ~500ms) để thực hiện **lệnh `DEL` lần 2**. Lần xóa trễ này đảm bảo quét sạch mọi dữ liệu cũ do các luồng đọc chậm vừa ghi đè vào cache.
+> * **Giải pháp 2: Change Data Capture (CDC / Transactional Outbox):** Sử dụng các công cụ như Debezium (lắng nghe MySQL Binlog / PostgreSQL WAL) để phát hiện thay đổi dữ liệu từ database và kích hoạt xóa cache một cách tin cậy, giải phóng ứng dụng khỏi gánh nặng điều phối Dual-Write.
 
 #### b. Write-Through
 * **Cơ chế:** Ứng dụng luôn ghi vào Cache. Tầng Cache đảm nhận việc ghi đồng bộ vào Database trước khi báo thành công cho ứng dụng.
@@ -455,6 +481,23 @@ sequenceDiagram
     end
 ```
 
+#### Giới hạn của Distributed Lock và Kỹ thuật Fencing Token (Tranh luận Kleppmann vs Antirez)
+Trong bài báo khoa học nổi tiếng phê bình thuật toán Redlock của **Martin Kleppmann** (tác giả sách *Designing Data-Intensive Applications*):
+* **Lỗ hổng của cơ chế TTL thuần túy:** Giả sử Worker 1 giành được Lock với TTL 10 giây. Sau đó Worker 1 gặp hiện tượng **Full GC Pause (Stop-The-World)** hoặc nghẽn I/O hệ điều hành kéo dài 15 giây.
+  * Trong lúc Worker 1 đang bị đóng băng, Lock trên Redis hết hạn.
+  * Worker 2 nhảy vào giành Lock mới và thực thi ghi dữ liệu xuống Database.
+  * Worker 1 tỉnh lại sau GC pause, **hoàn toàn không biết Lock của mình đã hết hạn**, và tiếp tục thực hiện ghi đè dữ liệu cũ xuống Database!
+* **Giải pháp Fencing Token (Mã chặn đơn điệu tăng):**
+  * Để giải quyết triệt để rủi ro trên, tầng lưu trữ cuối (Database / Storage) phải tham gia kiểm soát.
+  * Mỗi lần Redis cấp Lock thành công, nó sẽ cấp kèm một **Fencing Token** tự tăng (`INCR lock:counter`). Ví dụ: Worker 1 nhận token `101`, Worker 2 nhận token `102`.
+  * Khi Worker ghi vào Database, nó bắt buộc phải gửi kèm token:
+    ```sql
+    UPDATE accounts 
+    SET balance = balance - 100, last_fencing_token = 102 
+    WHERE id = 1 AND last_fencing_token < 102;
+    ```
+  * Khi Worker 1 (token 101) tỉnh lại và cố ghi dữ liệu, Database sẽ từ chối vì `101 < 102`, bảo vệ an toàn tuyệt đối cho tính nhất quán dữ liệu.
+
 ---
 
 ## III. VÍ DỤ MINH HỌA VÀ PHÂN TÍCH CODE (CODE ANALYSIS)
@@ -529,7 +572,8 @@ export class AdvancedCacheService {
   public static async getOrSet<T>(
     key: string,
     fetcher: () => Promise<T>,
-    options: CacheOptions
+    options: CacheOptions,
+    currentRetry = 0
   ): Promise<T | null> {
     const {
       ttlSeconds,
@@ -537,6 +581,7 @@ export class AdvancedCacheService {
       cacheNull = true,
       nullTtlSeconds = 60,
     } = options;
+    const MAX_RETRIES = 10; // Giới hạn tối đa 10 lần thử lại (~1 giây) chống đệ quy vô hạn
 
     // BƯỚC 1: Đọc từ Cache
     const cachedData = await redisClient.get(key);
@@ -581,9 +626,15 @@ export class AdvancedCacheService {
         await this.releaseLock(lockKey, lockToken);
       }
     } else {
-      // Các luồng còn lại không giành được lock: Tạm dừng và thử đọc lại Cache
+      // Nếu đã vượt quá số lần thử lại tối đa (do luồng chính xử lý quá lâu hoặc DB nghẽn)
+      if (currentRetry >= MAX_RETRIES) {
+        console.warn(`[AdvancedCacheService] Key "${key}" đợi lock quá ${MAX_RETRIES} lần, fallback query DB trực tiếp.`);
+        return await fetcher();
+      }
+
+      // Các luồng còn lại không giành được lock: Tạm dừng 100ms và thử đọc lại Cache
       await new Promise((resolve) => setTimeout(resolve, 100));
-      return this.getOrSet(key, fetcher, options);
+      return this.getOrSet(key, fetcher, options, currentRetry + 1);
     }
   }
 
@@ -669,7 +720,7 @@ export class DistributedLockService {
    */
   public static async release(lock: LockHandle): Promise<boolean> {
     const lockKey = `dlock:${lock.resource}`;
-    const result = await redisClient.eval(this.RELEASE_LUA, 1, lockKey, lockTokenToString(lock.token));
+    const result = await redisClient.eval(this.RELEASE_LUA, 1, lockKey, lock.token);
     return result === 1;
   }
 
@@ -683,7 +734,8 @@ export class DistributedLockService {
   }
 
   /**
-   * Wrapper Helper: Tự động khóa, chạy logic nghiệp vụ và tự động giải phóng
+   * Wrapper Helper: Tự động khóa, kích hoạt Watchdog tự gia hạn TTL,
+   * chạy logic nghiệp vụ và tự động giải phóng an toàn khi hoàn tất.
    */
   public static async runWithLock<T>(
     resource: string,
@@ -695,16 +747,30 @@ export class DistributedLockService {
       throw new Error(`[DistributedLock] Không thể giành quyền kiểm soát tài nguyên: ${resource}`);
     }
 
+    // Tự động gia hạn (Watchdog Pattern): Cứ mỗi ttlMs / 3 sẽ gia hạn lại TTL
+    // Ngăn chặn tình trạng task chạy quá lâu làm mất lock dẫn đến race condition
+    const heartbeatIntervalMs = Math.max(Math.floor(ttlMs / 3), 1000);
+    const watchdogTimer = setInterval(async () => {
+      try {
+        const extended = await this.extend(lock, ttlMs);
+        if (!extended) {
+          console.warn(`[DistributedLock Watchdog] Không thể gia hạn lock cho "${resource}", token đã bị mất.`);
+          clearInterval(watchdogTimer);
+        }
+      } catch (err) {
+        console.error(`[DistributedLock Watchdog] Lỗi khi gia hạn lock:`, err);
+        clearInterval(watchdogTimer);
+      }
+    }, heartbeatIntervalMs);
+
     try {
       return await task();
     } finally {
+      // Dọn dẹp: Luôn luôn hủy Watchdog Timer trước khi nhả Lock
+      clearInterval(watchdogTimer);
       await this.release(lock);
     }
   }
-}
-
-function lockTokenToString(token: string): string {
-  return token;
 }
 ```
 
