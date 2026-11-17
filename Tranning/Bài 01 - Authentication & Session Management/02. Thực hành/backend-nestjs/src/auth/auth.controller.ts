@@ -64,21 +64,32 @@ export class AuthController {
   ) {
     // Đọc refresh token từ cookie do trình duyệt tự động đính kèm
     const refreshToken = req.cookies?.['refreshToken'];
-    const result = await this.authService.refresh(refreshToken);
+    try {
+      const result = await this.authService.refresh(refreshToken);
 
-    // Ghi đè Cookie bằng Refresh Token mới (Rotate Token)
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: result.refreshTokenTtlSeconds * 1000,
-    });
+      // Ghi đè Cookie bằng Refresh Token mới (Rotate Token)
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: result.refreshTokenTtlSeconds * 1000,
+      });
 
-    return {
-      message: 'Làm mới phiên thành công',
-      accessToken: result.accessToken,
-    };
+      return {
+        message: 'Làm mới phiên thành công',
+        accessToken: result.accessToken,
+      };
+    } catch (error) {
+      // Xóa cookie đã hết hạn/bị thu hồi để tránh vòng lặp redirect ở Edge Middleware
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
+      throw error;
+    }
   }
 
   /**
@@ -92,7 +103,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const userId = req.user.userId;
-    const deviceId = req.headers['user-agent'] || 'unknown_browser';
+    const deviceId = req.user.deviceId || req.headers['user-agent'] || 'unknown_browser';
 
     // 1. Xóa session trên Redis
     await this.authService.logout(userId, deviceId);

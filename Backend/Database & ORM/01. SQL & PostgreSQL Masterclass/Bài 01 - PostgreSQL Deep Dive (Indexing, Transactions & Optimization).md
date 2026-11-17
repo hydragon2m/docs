@@ -360,9 +360,9 @@ Execution Time: 114.820 ms
 Nếu hệ thống chỉ thường xuyên tra cứu các đơn hàng chưa hoàn tất (`PENDING`, `PROCESSING`):
 
 ```sql
--- Tạo Composite Partial Index
+-- Tạo Composite Partial Index trên (status, total_amount)
 CREATE INDEX idx_orders_active_high_value 
-ON orders (total_amount) 
+ON orders (status, total_amount) 
 WHERE status IN ('PENDING', 'PROCESSING');
 ```
 
@@ -377,10 +377,10 @@ WHERE status = 'PENDING' AND total_amount > 4500;
 **Kế hoạch thực thi mới:**
 ```text
 Bitmap Heap Scan on orders  (cost=490.12..7820.40 rows=25120 width=28) (actual time=4.120..15.840 rows=24890 loops=1)
-  Recheck Cond: ((status = 'PENDING'::text) AND (total_amount > 4500))
+  Recheck Cond: (((status)::text = 'PENDING'::text) AND (total_amount > 4500))
   Buffers: shared hit=4210
   ->  Bitmap Index Scan on idx_orders_active_high_value  (cost=0.00..483.84 rows=25120 width=0) (actual time=3.850..3.850 rows=24890 loops=1)
-        Index Cond: (total_amount > 4500)
+        Index Cond: (((status)::text = 'PENDING'::text) AND (total_amount > 4500))
 Planning Time: 0.180 ms
 Execution Time: 17.150 ms
 ```

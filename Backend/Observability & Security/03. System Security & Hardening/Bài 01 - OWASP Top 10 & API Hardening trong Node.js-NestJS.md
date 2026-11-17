@@ -121,7 +121,7 @@ bootstrap();
 Cài đặt module `@nestjs/throttler`. Cấu hình trong `app.module.ts`:
 
 ```typescript
-import { Module } from '@nestjs/core';
+import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 

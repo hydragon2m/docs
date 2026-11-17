@@ -1,5 +1,5 @@
 > [!TIP]
-> 📌 **Liên kết:** [Quay lại Đề bài kiểm tra](file:///home/hy/Documents/Obsidian%20Vault/Tranning/B%C3%A0i%2002%20-%20Transaction%20&%20Retry/Test/01.%20%C4%90%E1%BB%81%20b%C3%A0i/C%C3%A2u%205%20%E2%80%93%20Transactional%20Outbox%20&%20Message%20Queue%20%28%C4%90%E1%BB%81%20b%C3%A0i%29.md)
+> 📌 **Liên kết:** [Quay lại Đề bài kiểm tra](../01.%20%C4%90%E1%BB%81%20b%C3%A0i/C%C3%A2u%205%20%E2%80%93%20Transactional%20Outbox%20&%20Message%20Queue%20(%C4%90%E1%BB%81%20b%C3%A0i).md)
 
 ---
 

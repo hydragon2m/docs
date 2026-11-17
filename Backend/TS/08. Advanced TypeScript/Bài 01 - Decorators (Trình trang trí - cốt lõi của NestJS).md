@@ -6,7 +6,7 @@ Decorators là một tính năng đặc biệt (hiện đang ở dạng đề xu
 ---
 
 ## 2. Kích hoạt Decorators trong dự án
-Để sử dụng Decorators, bạn bắt buộc phải bật cấu hình sau trong file cấu hình `tsconfig.json`:
+Để sử dụng Decorators trong hệ sinh thái **NestJS / TypeORM**, bạn bắt buộc phải bật cấu hình sau trong file `tsconfig.json`:
 
 ```json
 {
@@ -16,6 +16,11 @@ Decorators là một tính năng đặc biệt (hiện đang ở dạng đề xu
   }
 }
 ```
+
+> [!NOTE]
+> ### Phân biệt Legacy Decorators (Stage 2) và Standard Decorators (TC39 Stage 3 - TS 5.0+)
+> * **Standard Decorators (TS 5.0+):** Đã đạt chuẩn TC39 Stage 3 và hoạt động mặc định không cần bật cờ `experimentalDecorators`, có chữ ký hàm dạng `(value, context: DecoratorContext)`. Tuy nhiên, chuẩn này **chưa hỗ trợ Parameter Decorators (`@Body()`, `@Param()`) và chưa tự động emit kiểu dữ liệu runtime (`design:paramtypes`)**.
+> * **Legacy/Experimental Decorators (Stage 2):** Sử dụng chữ ký `(target, propertyKey, descriptor)` kết hợp với `emitDecoratorMetadata: true` và thư viện `reflect-metadata`. Đây vẫn là tiêu chuẩn bắt buộc cho **NestJS, TypeORM, class-validator và Angular DI**.
 
 ---
 

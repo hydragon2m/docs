@@ -47,7 +47,14 @@ flowchart TD
 #### d. Tầng 4: Router Cache (Bộ nhớ đệm phía Client)
 *   **Môi trường:** Client (Trình duyệt).
 *   **Cơ chế:** Lưu trữ tạm thời cấu trúc cây trang (React Server Component Payload) trong bộ nhớ đệm của trình duyệt khi người dùng chuyển trang qua thẻ `<Link>`.
-*   *Thời gian sống:* Xóa bỏ khi tải lại trang hoàn toàn (Hard Reload) hoặc tự động hết hạn sau 5 phút (cho trang tĩnh) hoặc 30 giây (cho trang động).
+*   *Thời gian sống:* Xóa bỏ khi tải lại trang hoàn toàn (Hard Reload) hoặc tự động hết hạn sau 5 phút (cho trang tĩnh) hoặc 30 giây (cho trang động trong Next.js 14; từ Next.js 15 mặc định là `0s`).
+
+> [!IMPORTANT]
+> ### Sự thay đổi cơ chế mặc định từ Next.js 15+ (Uncached by Default)
+> Từ phiên bản **Next.js 15 trở đi**, triết lý caching đã chuyển từ *"Cached by default"* (Next.js 13/14) sang **"Uncached by default"** để tránh lỗi dữ liệu cũ ngoài ý muốn:
+> * **`fetch()` Requests:** Mặc định sử dụng `cache: 'no-store'` (không tự động lưu vào Data Cache trừ khi khai báo tường minh `{ cache: 'force-cache' }` hoặc `{ next: { revalidate: N } }`).
+> * **`GET` Route Handlers:** Mặc định là **Dynamic** (không còn tự động cache tĩnh như Next.js 14 trừ khi thêm `export const dynamic = 'force-static'`).
+> * **Client Router Cache:** Mặc định `staleTimes.dynamic = 0` (luôn tải lại dữ liệu RSC mới từ server khi điều hướng vào trang động).
 
 ---
 

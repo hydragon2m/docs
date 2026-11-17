@@ -4,9 +4,11 @@ import { RedisService } from '../redis/redis.service';
 import { randomUUID } from 'crypto';
 
 export interface UserPayload {
+  sub?: string;
   userId: string;
   email: string;
   role: string;
+  deviceId?: string;
 }
 
 export interface RefreshTokenPayload extends UserPayload {
@@ -60,7 +62,8 @@ export class AuthService {
       throw new UnauthorizedException('Refresh Token đã hết hạn hoặc chữ ký không hợp lệ');
     }
 
-    const { userId, deviceId, jti } = payload;
+    const userId = payload.userId || payload.sub!;
+    const { deviceId, jti } = payload;
 
     // BƯỚC QUAN TRỌNG: Kiểm tra jti trong Redis Whitelist
     const storedJti = await this.redisService.getSession(userId, deviceId);
@@ -88,7 +91,7 @@ export class AuthService {
 
     // NẾU HỢP LỆ: Tạo cặp token mới (Token Rotation)
     const user: UserPayload = {
-      userId: payload.userId,
+      userId,
       email: payload.email,
       role: payload.role,
     };
@@ -123,8 +126,10 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       {
         sub: user.userId,
+        userId: user.userId,
         email: user.email,
         role: user.role,
+        deviceId,
       },
       {
         secret: process.env.JWT_ACCESS_SECRET || 'SUPER_SECRET_ACCESS_KEY',
@@ -136,6 +141,7 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(
       {
         sub: user.userId,
+        userId: user.userId,
         email: user.email,
         role: user.role,
         deviceId,

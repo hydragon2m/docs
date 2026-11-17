@@ -22,7 +22,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Nếu đã có cookie phiên mà vẫn vào trang /login -> Redirect thẳng vào /dashboard
+  // 2. Nếu bị điều hướng về /login do phiên hết hạn (expired=1), xóa cookie cũ để tránh lặp vô tận
+  if (isAuthRoute && request.nextUrl.searchParams.get('expired') === '1') {
+    const response = NextResponse.next();
+    response.cookies.delete('refreshToken');
+    return response;
+  }
+
+  // 3. Nếu đã có cookie phiên hợp lệ mà vẫn vào trang /login -> Redirect thẳng vào /dashboard
   if (isAuthRoute && refreshToken) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

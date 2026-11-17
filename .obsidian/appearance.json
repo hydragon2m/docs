@@ -1,5 +1,6 @@
 {
   "baseFontSizeAction": false,
   "theme": "obsidian",
-  "accentColor": "#a084e1"
+  "accentColor": "#a084e1",
+  "showRibbon": true
 }

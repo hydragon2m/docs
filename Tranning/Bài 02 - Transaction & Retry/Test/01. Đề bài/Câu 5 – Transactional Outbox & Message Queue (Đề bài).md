@@ -64,4 +64,4 @@ Consumer nhận event nhưng không thể xử lý vì PostgreSQL tạm thời m
 
 > [!TIP]
 > 📖 **Dành cho người chấm / Giảng viên:**
-> Xem đáp án chuẩn tại: [Câu 5 – Transactional Outbox & Message Queue (Đáp án)](file:///home/hy/Documents/Obsidian%20Vault/Tranning/B%C3%A0i%2002%20-%20Transaction%20&%20Retry/Test/02.%20%C4%90%C3%A1p%20%C3%A1n/C%C3%A2u%205%20%E2%80%93%20Transactional%20Outbox%20&%20Message%20Queue%20%28%C4%90%C3%A1p%20%C3%A1n%29.md)
+> Xem đáp án chuẩn tại: [Câu 5 – Transactional Outbox & Message Queue (Đáp án)](../02.%20%C4%90%C3%A1p%20%C3%A1n/C%C3%A2u%205%20%E2%80%93%20Transactional%20Outbox%20&%20Message%20Queue%20(%C4%90%C3%A1p%20%C3%A1n).md)
